@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+#
+# post-receive hook to start a package build via appveyor REST API
+#
+
+import json
+import os
+import subprocess
+import urllib.error
+import urllib.request
+
+account = subprocess.check_output(['git', 'config', 'appveyor.account']).strip().decode('ascii')
+token = subprocess.check_output(['git', 'config', 'appveyor.token']).strip().decode('ascii')
+slug = 'scallywag'
+
+
+def post_receive():
+    package = os.environ['GL_REPO']  # set by gitolite
+
+    data = {
+        "accountName": account,
+        "projectSlug": slug,
+        "branch": "master",
+        "environmentVariables": {
+            "PACKAGE": package,
+        }
+    }
+
+    req = urllib.request.Request('https://ci.appveyor.com/api/builds')
+
+    req.add_header('Content-Type', 'application/json')
+    req.add_header('Accept', 'application/xml')
+    req.add_header('Authorization', 'Bearer ' + token)
+
+    try:
+        response = urllib.request.urlopen(req, json.dumps(data).encode('utf-8'))
+    except urllib.error.URLError as e:
+        response = e
+
+    status = response.getcode()
+    if status != 200:
+        print('appveyor webhook status %s' % (status))
+
+
+if __name__ == '__main__':
+        post_receive()

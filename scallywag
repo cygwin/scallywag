@@ -1,0 +1,51 @@
+#!/usr/bin/env python3
+
+import logging
+import os
+import subprocess
+import sys
+
+from analyze import analyze
+
+logging.getLogger().setLevel(logging.INFO)
+logging.basicConfig(format=os.path.basename(sys.argv[0]) + ': %(message)s')
+
+package = os.environ['PACKAGE']
+logging.info('package is %s' % (package))
+
+# clone the package repo
+mydir = os.environ['APPVEYOR_BUILD_FOLDER']
+os.chdir(os.path.join(mydir, '..'))
+subprocess.check_call(['git', 'clone', '--depth=1', 'git://cygwin.com/git/cygwin-packages/%s.git' % (package)])
+
+# analyze the repo
+os.chdir(package)
+package = analyze(os.getcwd())
+
+if package.kind == 'cygport':
+    # install the build dependencies
+    subprocess.check_call([os.path.join('/', os.environ['SETUP'].strip()),
+                           '-q', '-n', '-O',
+                           '-R', os.environ['CYGWIN_ROOT'],
+                           '-s', os.environ['CYGWIN_MIRROR'],
+                           '-l', os.environ['CACHE'],
+                           '-P', ','.join(package.depends)])
+
+    # work-around setup's limited handling of obsolete packages by running it
+    # again to upgrade any obsolete packages which just got installed
+    subprocess.check_call([os.path.join('/', os.environ['SETUP'].strip()),
+                           '-q', '-n', '-O', '-g',
+                           '-R', os.environ['CYGWIN_ROOT'],
+                           '-s', os.environ['CYGWIN_MIRROR'],
+                           '-l', os.environ['CACHE']])
+
+    # fetch upstream sources
+    #
+    # (some cygclasses always check their prerequisites, so this must be after
+    # they are installed)
+    subprocess.check_call(['cygport', package.script, 'download'])
+
+    # do the build
+    subprocess.check_call([os.path.join(mydir, 'build.sh'), package.script])
+
+    # XXX: publish dist as artefacts
