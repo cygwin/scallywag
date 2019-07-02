@@ -1,26 +1,41 @@
 #!/usr/bin/env python3
 
+import glob
+import json
 import logging
 import os
+import shutil
 import subprocess
 import sys
+import urllib.error
+import urllib.request
 
 from analyze import analyze
 
 logging.getLogger().setLevel(logging.INFO)
 logging.basicConfig(format=os.path.basename(sys.argv[0]) + ': %(message)s')
 
-package = os.environ['PACKAGE']
-logging.info('package is %s' % (package))
+name = os.environ['PACKAGE']
+logging.info('package is %s' % (name))
 
 # clone the package repo
 mydir = os.environ['APPVEYOR_BUILD_FOLDER']
 os.chdir(os.path.join(mydir, '..'))
-subprocess.check_call(['git', 'clone', '--depth=1', 'git://cygwin.com/git/cygwin-packages/%s.git' % (package)])
+subprocess.check_call(['git', 'clone', '--depth=1', 'git://cygwin.com/git/cygwin-packages/%s.git' % (name)])
 
 # analyze the repo
-os.chdir(package)
+os.chdir(name)
 package = analyze(os.getcwd())
+commit = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode('ascii')
+
+# record package details using build worker API (so they appear in build notification)
+data = {
+    "message": 'PACKAGE: %s; COMMIT: %s' % (name, commit),
+}
+
+req = urllib.request.Request(os.environ['APPVEYOR_API_URL'] + 'api/build/messages')
+req.add_header('Content-Type', 'application/json')
+response = urllib.request.urlopen(req, json.dumps(data).encode('utf-8'))
 
 if package.kind == 'cygport':
     # install the build dependencies
@@ -48,4 +63,7 @@ if package.kind == 'cygport':
     # do the build
     subprocess.check_call([os.path.join(mydir, 'build.sh'), package.script])
 
-    # XXX: publish dist as artefacts
+    # publish contents of dist as artifacts
+    dist = glob.glob(os.path.join('*', 'dist'))
+    if dist:
+        shutil.move(dist[0], os.path.join(mydir, 'staging'))

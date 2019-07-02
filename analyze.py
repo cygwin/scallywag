@@ -27,7 +27,7 @@ import os
 import re
 
 
-PackageKind = namedtuple('PackageKind', 'kind script depends')
+PackageKind = namedtuple('PackageKind', 'kind script depends arches')
 
 
 #
@@ -61,15 +61,21 @@ def analyze(repodir):
         for match in matches:
             depend += match.group(1) + ' '
 
+        # extract any ARCH line
+        arches = ['i686', 'x86_64']
+        match = re.search(r'^\s*ARCH=\s*"?(.*?)"?$', content, re.MULTILINE)
+        if match:
+            arches = match.group(1).split()
+
         if depend:
             logging.info('repository contains cygport %s, with DEPEND' % fn)
             depends = set.union(depends_from_cygport(content),
                                 depends_from_depend(depend))
-            return PackageKind('cygport', script=fn, depends=depends)
+            return PackageKind('cygport', script=fn, depends=depends, arches=arches)
         else:
             logging.info('repository contains cygport %s' % fn)
             depends = depends_from_cygport(content)
-            return PackageKind('cygport', script=fn, depends=depends)
+            return PackageKind('cygport', script=fn, depends=depends, arches=arches)
 
     # if there's no cygport file, we look for a g-b-s style .sh file instead
     scripts = [m for m in files if re.search(r'\.sh$', m.name)]
@@ -85,13 +91,13 @@ def analyze(repodir):
             kind = 'g-b-s'
 
         logging.info('repository contains a %s-style build script %s' % (kind, fn))
-        return PackageKind(kind, script=fn, depends=set())
+        return PackageKind(kind, script=fn, depends=set(), arches=[])
     elif len(scripts) > 1:
         logging.error('too many scripts in repository')
-        return PackageKind(None, '', '')
+        return PackageKind(None, '', set(), arches=[])
 
     logging.error("couldn't find build instructions in repository")
-    return PackageKind(None, '', '')
+    return PackageKind(None, '', set(), arches=[])
 
 
 #
@@ -100,10 +106,10 @@ def analyze(repodir):
 
 # the mapping from cross-host target triples to package prefixes
 cross_package_prefixes = {
-    'i686-w64-mingw32':   'mingw64-i686-',
+    'i686-w64-mingw32': 'mingw64-i686-',
     'x86_64-w64-mingw32': 'mingw64-x86_64-',
-    'i686-pc-cygwin':     'cygwin32-',
-    'x86_64-pc-cygwin':   'cygwin64-',
+    'i686-pc-cygwin': 'cygwin32-',
+    'x86_64-pc-cygwin': 'cygwin64-',
 }
 
 

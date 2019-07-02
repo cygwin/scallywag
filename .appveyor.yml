@@ -20,6 +20,7 @@ cache:
 - C:\cache
 artifacts:
 - path: staging
+  name: artifacts
 test: off
 notifications:
   provider: Webhook
