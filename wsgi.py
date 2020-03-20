@@ -45,12 +45,14 @@ def serve_job_results():
                              <h1>%s</h1>
                              <table>''' % (header, header))
 
-    result += '<tr><th>id</th><th>srcpkg</th><th>status</th><th>logs</th><th>elapsed</th></tr>'
+    result += '<tr><th>id</th><th>srcpkg</th><th>status</th><th>commit</th><th>logs</th><th>elapsed</th></tr>'
 
     c = conn.execute('''SELECT * FROM jobs''')
     for row in c:
         (jobid, srcpkg, commit, status, logurl, start_ts, end_ts) = row
-        result += '<tr><td>%d</td><td>%s</td><td>%s</td><td><a href="%s">[log]</a></td><td>%s</td></tr>' % (jobid, srcpkg, status, logurl, end_ts - start_ts)
+        commiturl = 'https://cygwin.com/git-cygwin-packages/?p=git/cygwin-packages/%s.git;a=commitdiff;h=%s' % (srcpkg, commit)
+        shorthash = commit[0:8]
+        result += '<tr><td>%d</td><td>%s</td><td>%s</td><td><a href="%s">%s</td><td><a href="%s">[log]</a></td><td>%s</td></tr>' % (jobid, srcpkg, status, commiturl, shorthash, logurl, end_ts - start_ts)
 
     result += textwrap.dedent('''\
                              </table>
