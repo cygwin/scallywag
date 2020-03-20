@@ -18,6 +18,8 @@ logging.basicConfig(format=os.path.basename(sys.argv[0]) + ': %(message)s')
 name = os.environ['PACKAGE']
 logging.info('package is %s' % (name))
 
+maintainer = os.environ['MAINTAINER']
+
 # clone the package repo
 mydir = os.environ['APPVEYOR_BUILD_FOLDER']
 os.chdir(os.path.join(mydir, '..'))
@@ -28,14 +30,32 @@ os.chdir(name)
 package = analyze(os.getcwd())
 commit = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode('ascii')
 
+# compare target arch(es) and build environment
+arch = os.environ['BUILD'].split('-')[0]
+logging.info('build ARCH: %s, cygport ARCHes: %s' % (arch, package.arches))
+if 'noarch' in package.arches:
+    # noarch packages get built using x86_64 environment
+    if arch == 'x86_64':
+        arch = 'noarch'
+    else:
+        arch = 'skip'
+else:
+    # otherwise, build if it builds on this environment
+    if arch not in package.arches:
+        arch = 'skip'
+
 # record package details using build worker API (so they appear in build notification)
 data = {
-    "message": 'PACKAGE: %s; COMMIT: %s' % (name, commit),
+    "message": 'PACKAGE: %s; COMMIT: %s; ARCH: %s; MAINTAINER: %s' % (name, commit, arch, maintainer),
 }
 
 req = urllib.request.Request(os.environ['APPVEYOR_API_URL'] + 'api/build/messages')
 req.add_header('Content-Type', 'application/json')
 response = urllib.request.urlopen(req, json.dumps(data).encode('utf-8'))
+
+if arch == 'skip':
+    logging.info('nothing to build on this arch')
+    sys.exit(0)
 
 if package.kind == 'cygport':
     # install the build dependencies

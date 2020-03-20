@@ -2,6 +2,7 @@
 
 import json
 import sqlite3
+import subprocess
 import time
 import web
 
@@ -21,28 +22,37 @@ class hooks:
     def POST(self):
         data = web.data()
         j = json.loads(data)
-        # print('DATA RECEIVED:')
-        # print(json.dumps(j, sort_keys=True, indent=4))
+        with open('last.json', 'w') as f:
+            print(json.dumps(j, sort_keys=True, indent=4), file=f)
 
         buildnumber = j['eventData']['buildNumber']
         buildurl = j['eventData']['buildUrl']
         passed = j['eventData']['passed']
         started = parse_time(j['eventData']['started'])
         finished = parse_time(j['eventData']['finished'])
-
-        messages = j['eventData']['jobs'][0]['messages']
-        message = messages[0]['message']
+        artifacts = {}
 
         print(buildnumber)
         print(buildurl)
         print(passed)
         print(started)
         print(finished)
-        print(message)
 
-        evars = {i[0]: i[1] for i in map(lambda m: m.split(': ', 1), message.split('; '))}
-        package = evars['PACKAGE']
-        commit = evars['COMMIT']
+        for job in j['eventData']['jobs']:
+            messages = job['messages']
+            message = messages[0]['message']
+            print(message)
+
+            evars = {i[0]: i[1] for i in map(lambda m: m.split(': ', 1), message.split('; '))}
+            package = evars['PACKAGE']
+            commit = evars['COMMIT']
+            arch = evars['ARCH'].replace('i686', 'x86')
+            maintainer = evars['MAINTAINER']
+
+            if arch != 'skip':
+                artifacts[arch] = job['artifacts'][0]['permalink']
+
+        print(artifacts)
         print(package)
         print(commit)
 
@@ -50,6 +60,11 @@ class hooks:
             conn.execute("INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?)",
                          (buildnumber, package, commit, 'succeeded' if passed else 'failed', buildurl, started, finished))
             conn.commit()
+
+        if passed:
+            for arch in artifacts:
+                subprocess.call(['ssh', 'cygwin-admin@cygwin.com', '/sourceware/cygwin-staging/scallywag/fetch-artifacts',
+                                 "\'%s\'" % maintainer, arch, artifacts[arch]])
 
         return 'OK'
 
