@@ -63,6 +63,10 @@ class hooks:
                          (buildnumber, package, commit, maintainer, 'succeeded' if passed else 'failed', buildurl, started, finished, arches))
             conn.commit()
 
+        # XXX: opt-in list for now
+        if maintainer not in ['Jon Turney']:
+            return
+
         if passed:
             for arch in artifacts:
                 subprocess.call(['ssh', 'cygwin-admin@cygwin.com', '/sourceware/cygwin-staging/scallywag/fetch-artifacts',
