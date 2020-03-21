@@ -1,0 +1,11 @@
+#!/bin/sh -x
+#
+# Unfortunately, Appveyor doesn't read the .appveyor.yml before cloning
+# when using a custom git repository localtion
+#
+#
+# use this script to update the .appveyor.yml stored by Appveyor, after changing
+# it in this repository
+#
+
+curl -H "Authorization: Bearer $APPVEYOR_TOKEN" -H "Content-Type: plain/text" -T .appveyor.yml https://ci.appveyor.com/api/projects/cygwin/scallywag/settings/yaml
