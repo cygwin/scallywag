@@ -15,9 +15,12 @@ slug = 'scallywag'
 
 
 def post_receive():
-    package = os.environ['GL_REPO']  # set by gitolite
+    repo = os.environ['GL_REPO']  # set by gitolite
     maintainer = os.environ['CYGNAME']  # set for ssh-wrapper
 
+
+    _, package = os.path.split(repo)
+    package, _ = os.path.splitext(package)
     data = {
         "accountName": account,
         "projectSlug": slug,
