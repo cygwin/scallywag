@@ -49,4 +49,8 @@ def post_receive():
 
 
 if __name__ == '__main__':
-    post_receive()
+    for line in sys.stdin.readlines():
+        old, new, ref = line.strip().split()
+        if ref == 'refs/heads/master':
+            # only do something if master ref is updated
+            post_receive()
