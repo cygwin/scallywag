@@ -31,7 +31,7 @@ def post_receive():
     req = urllib.request.Request('https://ci.appveyor.com/api/builds')
 
     req.add_header('Content-Type', 'application/json')
-    req.add_header('Accept', 'application/xml')
+    req.add_header('Accept', 'application/json')
     req.add_header('Authorization', 'Bearer ' + token)
 
     try:
@@ -41,8 +41,12 @@ def post_receive():
 
     status = response.getcode()
     if status != 200:
-        print('appveyor webhook status %s' % (status))
+        print('scallywag: webhook failed status %s' % (status))
+        return
+
+    j = json.loads(response.read().decode('utf-8'))
+    print('scallywag: build %s queued' % j['buildNumber'])
 
 
 if __name__ == '__main__':
-        post_receive()
+    post_receive()
