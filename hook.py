@@ -55,10 +55,11 @@ class hooks:
         print(artifacts)
         print(package)
         print(commit)
+        arches = ' '.join(artifacts.keys())
 
         with sqlite3.connect('carpetbag.db') as conn:
-            conn.execute("INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?)",
-                         (buildnumber, package, commit, 'succeeded' if passed else 'failed', buildurl, started, finished))
+            conn.execute("INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                         (buildnumber, package, commit, maintainer, 'succeeded' if passed else 'failed', buildurl, started, finished, arches))
             conn.commit()
 
         if passed:
@@ -72,6 +73,6 @@ class hooks:
 if __name__ == '__main__':
     with sqlite3.connect('carpetbag.db') as conn:
         conn.execute('''CREATE TABLE IF NOT EXISTS jobs
-                     (id integer primary key, srcpkg text, hash text, status text, logurl text, start_timestamp integer, end_timestamp integer)''')
+                     (id integer primary key, srcpkg text, hash text, user text, status text, logurl text, start_timestamp integer, end_timestamp integer, arches text)''')
 
     app.run()
