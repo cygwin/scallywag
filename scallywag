@@ -59,6 +59,7 @@ if arch == 'skip':
 
 if package.kind == 'cygport':
     # install the build dependencies
+    logging.info('installing build dependencies')
     subprocess.check_call([os.path.join('/', os.environ['SETUP'].strip()),
                            '-q', '-n', '-O',
                            '-R', os.environ['CYGWIN_ROOT'],
@@ -68,6 +69,7 @@ if package.kind == 'cygport':
 
     # work-around setup's limited handling of obsolete packages by running it
     # again to upgrade any obsolete packages which just got installed
+    logging.info('updating build dependencies')
     subprocess.check_call([os.path.join('/', os.environ['SETUP'].strip()),
                            '-q', '-n', '-O', '-g',
                            '-R', os.environ['CYGWIN_ROOT'],
@@ -78,12 +80,15 @@ if package.kind == 'cygport':
     #
     # (some cygclasses always check their prerequisites, so this must be after
     # they are installed)
+    logging.info('fetching source')
     subprocess.check_call(['cygport', package.script, 'download'])
 
     # do the build
+    logging.info('building')
     subprocess.check_call([os.path.join(mydir, 'build.sh'), package.script])
 
     # publish contents of dist as artifacts
     dist = glob.glob(os.path.join('*', 'dist'))
     if dist:
+        logging.info('publishing artifacts')
         shutil.move(dist[0], os.path.join(mydir, 'staging'))
