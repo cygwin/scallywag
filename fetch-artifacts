@@ -7,4 +7,4 @@ unzip -o ${tmpfile} -d "/sourceware/cygwin-staging/home/$1/$2/release"
 rm ${tmpfile}
 
 touch "/sourceware/cygwin-staging/home/$1/$2/release/!ready"
-kill -SIGUSR1 $(cat /sourceware/cygwin-staging/calm.pid)
+#kill -SIGUSR1 $(cat /sourceware/cygwin-staging/calm.pid)
