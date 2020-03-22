@@ -10,3 +10,6 @@ cd - >/dev/null
 
 # prep/compile/install/package (as test)
 cygport ${SCRIPT} all-test || exit 1
+
+# run the package's test suite
+cygport ${SCRIPT} test || exit 1
