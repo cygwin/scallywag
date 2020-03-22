@@ -50,7 +50,8 @@ class hooks:
             maintainer = evars['MAINTAINER']
 
             if arch != 'skip':
-                artifacts[arch] = job['artifacts'][0]['permalink']
+                if len(job['artifacts']):
+                    artifacts[arch] = job['artifacts'][0]['permalink']
 
         print(artifacts)
         print(package)
