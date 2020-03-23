@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import json
+import logging
 import sqlite3
 import subprocess
 import time
@@ -32,16 +33,9 @@ class hooks:
         finished = parse_time(j['eventData']['finished'])
         artifacts = {}
 
-        print(buildnumber)
-        print(buildurl)
-        print(passed)
-        print(started)
-        print(finished)
-
         for job in j['eventData']['jobs']:
             messages = job['messages']
             message = messages[0]['message']
-            print(message)
 
             evars = {i[0]: i[1] for i in map(lambda m: m.split(': ', 1), message.split('; '))}
             package = evars['PACKAGE']
@@ -53,10 +47,8 @@ class hooks:
                 if len(job['artifacts']):
                     artifacts[arch] = job['artifacts'][0]['permalink']
 
-        print(artifacts)
-        print(package)
-        print(commit)
         arches = ' '.join(artifacts.keys())
+        logging.info('buildno: %d, passed %s, package: %s, commit: %s, arches: %s' % (buildnumber, passed, package, commit, arches))
 
         with sqlite3.connect('carpetbag.db') as conn:
             conn.execute("INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
