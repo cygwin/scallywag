@@ -25,3 +25,6 @@ test: off
 notifications:
   provider: Webhook
   url: http://dronecode.duckdns.org:8080/hook/notify
+  headers:
+    Authorization:
+      secure: r9DfPVTZOdxGpZzS/vm4Ew==
