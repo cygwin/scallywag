@@ -1,0 +1,39 @@
+Scallywag, or how does this daisy-chain of hacks work?
+======================================================
+
+1. gitolite
+
+In .gitolite.rc, LOCAL_CODE points to $HOME/.gitlite/local.
+
+$LOCAL_CODE/hooks/common contains a link to the post-receive script, which is
+linked to in all repositories hooks directory.
+
+2. post-receive
+
+GL_REPO is set in the environment by gitolite.
+CYGNAME is set in the environment by .ssh/authorized_keys.
+
+If the git receive updated the master reference, this queues build using the
+Appveyor REST API, with PACKAGE and MAINTAINER environment variables.
+
+3. .appveyor.yml
+
+a. Installs Cygwin
+b. Invokes scallywag
+
+Stores PACKAGE, MAINTAINER, COMMIT and ARCH in a log message using the AppVeyor
+build worker API.
+
+Builds packages using cygport.
+
+c. POSTs to a notification webhook when the build is complete
+
+4. hook.py
+
+Extracts status and artifacts information from the job result.
+Extracts PACKAGE, MAINTAINER, COMMIT and ARCH from log message in the job result.
+
+Stores that information in an sqlite db.  wsgi.py provides a toy web interface
+to examine that.
+
+5. fetch-artifacts
