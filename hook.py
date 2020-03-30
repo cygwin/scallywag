@@ -45,6 +45,7 @@ class hooks:
         started = parse_time(j['eventData']['started'])
         finished = parse_time(j['eventData']['finished'])
         artifacts = {}
+        arches = []
 
         for job in j['eventData']['jobs']:
             messages = job['messages']
@@ -57,10 +58,11 @@ class hooks:
             maintainer = evars['MAINTAINER']
 
             if arch != 'skip':
+                arches.append(arch)
                 if len(job['artifacts']):
                     artifacts[arch] = job['artifacts'][0]['permalink']
 
-        arches = ' '.join(artifacts.keys())
+        arches = ' '.join(sorted(arches))
         logging.info('buildno: %d, passed %s, package: %s, commit: %s, arches: %s' % (buildnumber, passed, package, commit, arches))
 
         with sqlite3.connect('carpetbag.db') as conn:
