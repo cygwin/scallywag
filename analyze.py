@@ -67,6 +67,11 @@ def analyze(repodir):
         if match:
             arches = match.group(1).split()
 
+        # 'inherit cross' implies ARCH=noarch
+        match = re.search(r'^\s*inherit\s*cross', content, re.MULTILINE)
+        if match:
+            arches = 'noarch'
+
         if depend:
             logging.info('repository contains cygport %s, with DEPEND' % fn)
             depends = set.union(depends_from_cygport(content),
