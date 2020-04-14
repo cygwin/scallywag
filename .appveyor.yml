@@ -24,7 +24,7 @@ artifacts:
 test: off
 notifications:
   provider: Webhook
-  url: http://dronecode.duckdns.org:8080/hook/notify
+  url: http://cygwin.com/cgi-bin2/hook.py
   headers:
     Authorization:
       secure: r9DfPVTZOdxGpZzS/vm4Ew==

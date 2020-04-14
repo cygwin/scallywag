@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 
+import cgitb
 import json
 import logging
 import os
 import re
 import sqlite3
-import subprocess
+import sys
 import time
-import web
 
-urls = ('/hook/.*', 'hooks')
 dbfile = '/sourceware/cygwin-staging/scallywag/carpetbag.db'
 
 
@@ -20,68 +19,59 @@ def parse_time(s):
     return int(t)
 
 
-class hooks:
-    def POST(self):
-        if web.ctx.ip != '138.91.141.243':
-            web.ctx.status = '403 Forbidden'
-            return 'Forbidden'
+def hook():
+    if os.environ['REQUEST_METHOD'] != 'POST':
+        return '400 Bad Request'
 
-        if 'SCALLYWAG_AUTH' not in os.environ:
-            web.ctx.status = '401 Unauthorized'
-            return 'Unauthorized (not configured)'
+    # request originates from appveyor, or me
+    if os.environ['REMOTE_ADDR'] not in ['138.91.141.243', '86.158.32.4']:
+        return '403 Forbidden'
 
-        auth = web.ctx.env.get('HTTP_AUTHORIZATION', '')
-        auth = re.sub('^Basic ', '', auth)
-        if auth != os.environ.get('SCALLYWAG_AUTH'):
-            web.ctx.status = '401 Unauthorized'
-            return 'Unauthorized'
+    if 'SCALLYWAG_AUTH' not in os.environ:
+        return '401 Unauthorized'
 
-        data = web.data()
-        j = json.loads(data)
-        with open('/sourceware/cygwin-staging/scallywag/last.json', 'w') as f:
-            print(json.dumps(j, sort_keys=True, indent=4), file=f)
+    auth = os.environ.get('HTTP_AUTHORIZATION', '')
+    auth = re.sub('^Basic ', '', auth)
+    if auth != os.environ.get('SCALLYWAG_AUTH'):
+        return '401 Unauthorized'
 
-        buildnumber = j['eventData']['buildNumber']
-        buildurl = j['eventData']['buildUrl']
-        passed = j['eventData']['passed']
-        started = parse_time(j['eventData']['started'])
-        finished = parse_time(j['eventData']['finished'])
-        artifacts = {}
-        arches = []
+    data = sys.stdin.read()
+    j = json.loads(data)
+    with open('/sourceware/cygwin-staging/scallywag/last.json', 'w') as f:
+        print(json.dumps(j, sort_keys=True, indent=4), file=f)
 
-        for job in j['eventData']['jobs']:
-            messages = job['messages']
-            message = messages[0]['message']
+    buildnumber = j['eventData']['buildNumber']
+    buildurl = j['eventData']['buildUrl']
+    passed = j['eventData']['passed']
+    started = parse_time(j['eventData']['started'])
+    finished = parse_time(j['eventData']['finished'])
+    artifacts = {}
+    arches = []
 
-            evars = {i[0]: i[1] for i in map(lambda m: m.split(': ', 1), message.split('; '))}
-            package = evars['PACKAGE']
-            commit = evars['COMMIT']
-            arch = evars['ARCH'].replace('i686', 'x86')
-            maintainer = evars['MAINTAINER']
+    for job in j['eventData']['jobs']:
+        messages = job['messages']
+        message = messages[0]['message']
 
-            if arch != 'skip':
-                arches.append(arch)
-                if len(job['artifacts']):
-                    artifacts[arch] = job['artifacts'][0]['permalink']
+        evars = {i[0]: i[1] for i in map(lambda m: m.split(': ', 1), message.split('; '))}
+        package = evars['PACKAGE']
+        commit = evars['COMMIT']
+        arch = evars['ARCH'].replace('i686', 'x86')
+        maintainer = evars['MAINTAINER']
 
-        arches = ' '.join(sorted(arches))
-        logging.info('buildno: %d, passed %s, package: %s, commit: %s, arches: %s' % (buildnumber, passed, package, commit, arches))
+        if arch != 'skip':
+            arches.append(arch)
+            if len(job['artifacts']):
+                artifacts[arch] = job['artifacts'][0]['permalink']
 
-        with sqlite3.connect(dbfile) as conn:
-            conn.execute("INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                         (buildnumber, package, commit, maintainer, 'succeeded' if passed else 'failed', buildurl, started, finished, arches))
-            conn.commit()
+    arches = ' '.join(sorted(arches))
+    logging.info('buildno: %d, passed %s, package: %s, commit: %s, arches: %s' % (buildnumber, passed, package, commit, arches))
 
-        # XXX: opt-in list for now
-        if maintainer not in ['Jon Turney']:
-            return
+    with sqlite3.connect(dbfile) as conn:
+        conn.execute('INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                     (buildnumber, package, commit, maintainer, 'succeeded' if passed else 'failed', buildurl, started, finished, arches))
+        conn.commit()
 
-        if passed:
-            for arch in artifacts:
-                subprocess.call(['ssh', 'cygwin-admin@cygwin.com', '/sourceware/cygwin-staging/scallywag/fetch-artifacts',
-                                 "\'%s\'" % maintainer, arch, artifacts[arch]])
-
-        return 'OK'
+    return '200 OK'
 
 
 if __name__ == '__main__':
@@ -89,5 +79,13 @@ if __name__ == '__main__':
         conn.execute('''CREATE TABLE IF NOT EXISTS jobs
                      (id integer primary key, srcpkg text, hash text, user text, status text, logurl text, start_timestamp integer, end_timestamp integer, arches text)''')
 
-    app = web.application(urls, globals())
-    app.run()
+    cgitb.enable(format='text')
+    try:
+        print('Status: %s' % hook())
+        print()
+    except BaseException:
+        # allow cgitb to do it's thing
+        print('Content-Type: text/plain')
+        print('Status: 422')
+        print()
+        raise
