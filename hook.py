@@ -6,13 +6,11 @@ import os
 import re
 import sqlite3
 import subprocess
-import sys
 import time
 import web
 
 urls = ('/hook/.*', 'hooks')
-
-app = web.application(urls, globals())
+dbfile = '/sourceware/cygwin-staging/scallywag/carpetbag.db'
 
 
 def parse_time(s):
@@ -28,6 +26,10 @@ class hooks:
             web.ctx.status = '403 Forbidden'
             return 'Forbidden'
 
+        if 'SCALLYWAG_AUTH' not in os.environ:
+            web.ctx.status = '401 Unauthorized'
+            return 'Unauthorized (not configured)'
+
         auth = web.ctx.env.get('HTTP_AUTHORIZATION', '')
         auth = re.sub('^Basic ', '', auth)
         if auth != os.environ.get('SCALLYWAG_AUTH'):
@@ -36,7 +38,7 @@ class hooks:
 
         data = web.data()
         j = json.loads(data)
-        with open('last.json', 'w') as f:
+        with open('/sourceware/cygwin-staging/scallywag/last.json', 'w') as f:
             print(json.dumps(j, sort_keys=True, indent=4), file=f)
 
         buildnumber = j['eventData']['buildNumber']
@@ -65,7 +67,7 @@ class hooks:
         arches = ' '.join(sorted(arches))
         logging.info('buildno: %d, passed %s, package: %s, commit: %s, arches: %s' % (buildnumber, passed, package, commit, arches))
 
-        with sqlite3.connect('carpetbag.db') as conn:
+        with sqlite3.connect(dbfile) as conn:
             conn.execute("INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                          (buildnumber, package, commit, maintainer, 'succeeded' if passed else 'failed', buildurl, started, finished, arches))
             conn.commit()
@@ -83,12 +85,9 @@ class hooks:
 
 
 if __name__ == '__main__':
-    if 'SCALLYWAG_AUTH' not in os.environ:
-        print('SCALLYWAG_AUTH env var not set')
-        sys.exit(1)
-
-    with sqlite3.connect('carpetbag.db') as conn:
+    with sqlite3.connect(dbfile) as conn:
         conn.execute('''CREATE TABLE IF NOT EXISTS jobs
                      (id integer primary key, srcpkg text, hash text, user text, status text, logurl text, start_timestamp integer, end_timestamp integer, arches text)''')
 
+    app = web.application(urls, globals())
     app.run()
