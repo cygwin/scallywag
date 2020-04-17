@@ -6,10 +6,13 @@ import logging
 import os
 import re
 import sqlite3
+import subprocess
 import sys
 import time
 
-dbfile = '/sourceware/cygwin-staging/scallywag/carpetbag.db'
+basedir = os.path.dirname(os.path.realpath(__file__))
+dbfile = os.path.join(basedir, 'carpetbag.db')
+authfile = os.path.join(basedir, 'auth')
 
 
 def parse_time(s):
@@ -21,23 +24,25 @@ def parse_time(s):
 
 def hook():
     if os.environ['REQUEST_METHOD'] != 'POST':
-        return '400 Bad Request'
+        return '400 Bad Request', ''
 
     # request originates from appveyor, or me
     if os.environ['REMOTE_ADDR'] not in ['138.91.141.243', '86.158.32.4']:
-        return '403 Forbidden'
+        return '403 Forbidden', ''
 
-    if 'SCALLYWAG_AUTH' not in os.environ:
-        return '401 Unauthorized'
+    if not os.path.exists(authfile):
+        return '401 Unauthorized', ''
+    with open(authfile) as f:
+        auth = f.read().strip()
 
-    auth = os.environ.get('HTTP_AUTHORIZATION', '')
-    auth = re.sub('^Basic ', '', auth)
-    if auth != os.environ.get('SCALLYWAG_AUTH'):
-        return '401 Unauthorized'
+    tryauth = os.environ.get('HTTP_AUTHORIZATION', '')
+    tryauth = re.sub('^Basic ', '', auth)
+    if tryauth != auth:
+        return '401 Unauthorized', ''
 
     data = sys.stdin.read()
     j = json.loads(data)
-    with open('/sourceware/cygwin-staging/scallywag/last.json', 'w') as f:
+    with open(os.path.join(basedir, 'last.json'), 'w') as f:
         print(json.dumps(j, sort_keys=True, indent=4), file=f)
 
     buildnumber = j['eventData']['buildNumber']
@@ -71,7 +76,19 @@ def hook():
                      (buildnumber, package, commit, maintainer, 'succeeded' if passed else 'failed', buildurl, started, finished, arches))
         conn.commit()
 
-    return '200 OK'
+    content = ''
+    # XXX: opt-in list for now
+    # XXX: allowing this to run under 'apache' user is problematic
+    if maintainer in []:
+        if passed:
+            for arch in artifacts:
+                try:
+                    content += subprocess.check_output([os.path.join(basedir, 'fetch-artifacts'),
+                                                        "\'%s\'" % maintainer, arch, artifacts[arch]])
+                except subprocess.CalledProcessError as e:
+                    content += e.output
+
+    return '200 OK', content
 
 
 if __name__ == '__main__':
@@ -79,10 +96,12 @@ if __name__ == '__main__':
         conn.execute('''CREATE TABLE IF NOT EXISTS jobs
                      (id integer primary key, srcpkg text, hash text, user text, status text, logurl text, start_timestamp integer, end_timestamp integer, arches text)''')
 
-    cgitb.enable(format='text')
+    cgitb.enable(logdir='/tmp/scallywag/', format='text')
     try:
-        print('Status: %s' % hook())
+        status, content = hook()
+        print('Status: %s' % status)
         print()
+        print(content)
     except BaseException:
         # allow cgitb to do it's thing
         print('Content-Type: text/plain')
