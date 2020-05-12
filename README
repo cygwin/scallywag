@@ -28,12 +28,23 @@ Builds packages using cygport.
 
 c. POSTs to a notification webhook when the build is complete
 
-4. hook.py
+4. hook.cgi
 
 Extracts status and artifacts information from the job result.
 Extracts PACKAGE, MAINTAINER, COMMIT and ARCH from log message in the job result.
 
-Stores that information in an sqlite db.  wsgi.py provides a toy web interface
-to examine that.
+Stores that information in an sqlite db.
+
+jobs.cgi provides a web interface to examine that.
 
 5. fetch-artifacts
+
+XXX: not yet done
+
+Fetch the build artifacts to CYGNAME's upload area on sourceware, and request
+upload processing by calm.
+
+
+TODO:
+- don't use appveyor as our build backend
+- don't be terrible
