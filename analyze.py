@@ -52,12 +52,12 @@ def analyze(repodir):
         # fold any line-continuations
         content = re.sub(r'\\\n', '', content)
 
-        # does it have a DEPEND line?
+        # does it have a BUILD_REQUIRES or DEPEND line?
 
-        # Note that this only approximates the value of DEPEND.  The only
-        # accurate way to evaluate it is to execute the cygport.
+        # Note that this only approximates the value.  The only accurate way to
+        # evaluate it is to execute the cygport.
         depend = ''
-        matches = re.finditer(r'^\s*DEPEND(?:\+|)=\s*"(.*?)"', content, re.MULTILINE | re.DOTALL)
+        matches = re.finditer(r'^\s*(?:DEPEND|BUILD_REQUIRES)(?:\+|)=\s*"(.*?)"', content, re.MULTILINE | re.DOTALL)
         for match in matches:
             depend += match.group(1) + ' '
 
@@ -73,7 +73,7 @@ def analyze(repodir):
             arches = 'noarch'
 
         if depend:
-            logging.info('repository contains cygport %s, with DEPEND' % fn)
+            logging.info('repository contains cygport %s, with BUILD_REQUIRES' % fn)
             depends = set.union(depends_from_cygport(content),
                                 depends_from_depend(depend))
             return PackageKind('cygport', script=fn, depends=depends, arches=arches)
@@ -173,8 +173,12 @@ def depends_from_cygport(content):
 #
 # transform a cygport DEPEND atom list into a list of cygwin packages
 #
+# (XXX: DEPEND is now deprecated, in preference to BUILD_REQUIRES, which can
+# only contain cygwin package names, and hence doesn't require the complexity of
+# handling dependency atoms, so this can be removed when we stop supporting
+# DEPEND)
+#
 
-# XXX: this needs to be dynamically updated, rather than in a file
 pkgconfig_map = eval(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pkgconfig-map')).read())
 
 
@@ -218,5 +222,5 @@ def depends_from_depend(depend):
         else:
             build_deps.add(atom)
 
-    logging.info('build dependencies (from DEPEND): %s' % (','.join(sorted(build_deps))))
+    logging.info('build dependencies (from BUILD_REQUIRES): %s' % (','.join(sorted(build_deps))))
     return build_deps
