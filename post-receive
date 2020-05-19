@@ -15,10 +15,9 @@ token = subprocess.check_output(['git', 'config', 'appveyor.token']).strip().dec
 slug = 'scallywag'
 
 
-def post_receive():
+def post_receive(commit, reference):
     repo = os.environ['GL_REPO']  # set by gitolite
     maintainer = os.environ['CYGNAME']  # set for ssh-wrapper
-
 
     _, package = os.path.split(repo)
     package, _ = os.path.splitext(package)
@@ -29,6 +28,7 @@ def post_receive():
         "environmentVariables": {
             "PACKAGE": package,
             "MAINTAINER": maintainer,
+            "COMMIT": commit,
         }
     }
 
@@ -57,4 +57,4 @@ if __name__ == '__main__':
         old, new, ref = line.strip().split()
         if ref == 'refs/heads/master':
             # only do something if master ref is updated
-            post_receive()
+            post_receive(new, ref)

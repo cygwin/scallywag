@@ -19,16 +19,26 @@ name = os.environ['PACKAGE']
 logging.info('package is %s' % (name))
 
 maintainer = os.environ['MAINTAINER']
+commit = os.environ['COMMIT']
 
-# clone the package repo
+# make a directory for working with the package repo
 mydir = os.environ['APPVEYOR_BUILD_FOLDER']
 os.chdir(os.path.join(mydir, '..'))
-subprocess.check_call(['git', 'clone', '--depth=1', 'git://cygwin.com/git/cygwin-packages/%s.git' % (name)])
+os.mkdir(name)
+os.chdir(name)
+
+# clone the package repo
+# 'git clone' can't do a shallow clone of a specific commit.
+#
+# (This requires allowReachableSHA1InWant to be true at the remote, to allow
+# non-branch/tag tip commits to be fetched)
+subprocess.check_call(['git', 'init'])
+subprocess.check_call(['git', 'remote', 'add', 'origin', 'git://cygwin.com/git/cygwin-packages/%s.git' % (name)])
+subprocess.check_call(['git', 'fetch', '--depth=1', 'origin', commit])
+subprocess.check_call(['git', 'checkout', '-b', 'work', 'FETCH_HEAD'])
 
 # analyze the repo
-os.chdir(name)
 package = analyze(os.getcwd())
-commit = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode('ascii')
 
 # compare target arch(es) and build environment
 arch = os.environ['BUILD'].split('-')[0]
