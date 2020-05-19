@@ -29,6 +29,7 @@ def post_receive(commit, reference):
             "PACKAGE": package,
             "MAINTAINER": maintainer,
             "COMMIT": commit,
+            "REFERENCE": reference,
         }
     }
 
@@ -55,6 +56,6 @@ def post_receive(commit, reference):
 if __name__ == '__main__':
     for line in sys.stdin.readlines():
         old, new, ref = line.strip().split()
-        if ref == 'refs/heads/master':
-            # only do something if master ref is updated
+        if ref.startswith('refs/heads/'):
+            # only do something if a branch ref is updated
             post_receive(new, ref)

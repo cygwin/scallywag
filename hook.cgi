@@ -60,6 +60,7 @@ def hook():
         evars = {i[0]: i[1] for i in map(lambda m: m.split(': ', 1), message.split('; '))}
         package = evars['PACKAGE']
         commit = evars['COMMIT']
+        reference = evars['REFERENCE']
         arch = evars['ARCH'].replace('i686', 'x86')
         maintainer = evars['MAINTAINER']
 
@@ -77,9 +78,10 @@ def hook():
         conn.commit()
 
     content = ''
+
     # XXX: opt-in list for now
     # XXX: allowing this to run under 'apache' user is problematic
-    if maintainer in []:
+    if (reference == 'refs/heads/master') and (maintainer in []):
         if passed:
             for arch in artifacts:
                 try:

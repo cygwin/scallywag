@@ -20,6 +20,7 @@ logging.info('package is %s' % (name))
 
 maintainer = os.environ['MAINTAINER']
 commit = os.environ['COMMIT']
+reference = os.environ['REFERENCE']
 
 # make a directory for working with the package repo
 mydir = os.environ['APPVEYOR_BUILD_FOLDER']
@@ -56,7 +57,7 @@ else:
 
 # record package details using build worker API (so they appear in build notification)
 data = {
-    "message": 'PACKAGE: %s; COMMIT: %s; ARCH: %s; MAINTAINER: %s' % (name, commit, arch, maintainer),
+    "message": 'PACKAGE: %s; COMMIT: %s; ARCH: %s; MAINTAINER: %s; REFERENCE: %s' % (name, commit, arch, maintainer, reference),
 }
 
 req = urllib.request.Request(os.environ['APPVEYOR_API_URL'] + 'api/build/messages')
