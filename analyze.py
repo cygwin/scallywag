@@ -41,7 +41,7 @@ def analyze(repodir):
     # more than one cygport!
     if len(cygports) > 1:
         logging.error('repository contains multiple .cygport files')
-        return PackageKind(None, '', '')
+        return PackageKind(None, '', set(), [])
 
     # exactly one cygport file
     if len(cygports) == 1:

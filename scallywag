@@ -33,10 +33,13 @@ os.chdir(name)
 #
 # (This requires allowReachableSHA1InWant to be true at the remote, to allow
 # non-branch/tag tip commits to be fetched)
-subprocess.check_call(['git', 'init'])
-subprocess.check_call(['git', 'remote', 'add', 'origin', 'git://cygwin.com/git/cygwin-packages/%s.git' % (name)])
-subprocess.check_call(['git', 'fetch', '--depth=1', 'origin', commit])
-subprocess.check_call(['git', 'checkout', '-b', 'work', 'FETCH_HEAD'])
+try:
+    subprocess.check_call(['git', 'init'])
+    subprocess.check_call(['git', 'remote', 'add', 'origin', 'git://cygwin.com/git/cygwin-packages/%s.git' % (name)])
+    subprocess.check_call(['git', 'fetch', '--depth=1', 'origin', commit])
+    subprocess.check_call(['git', 'checkout', '-b', 'work', 'FETCH_HEAD'])
+except subprocess.CalledProcessError:
+    logging.info('something went wrong cloning the package repo')
 
 # analyze the repo
 package = analyze(os.getcwd())

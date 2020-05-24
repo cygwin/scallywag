@@ -57,6 +57,6 @@ def post_receive(commit, reference):
 if __name__ == '__main__':
     for line in sys.stdin.readlines():
         old, new, ref = line.strip().split()
-        if ref.startswith('refs/heads/'):
+        if ref.startswith('refs/heads/') and new != '0000000000000000000000000000000000000000':
             # only do something if a branch ref is updated
             post_receive(new, ref)
