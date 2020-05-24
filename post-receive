@@ -20,7 +20,8 @@ def post_receive(commit, reference):
     maintainer = os.environ['CYGNAME']  # set for ssh-wrapper
 
     _, package = os.path.split(repo)
-    package, _ = os.path.splitext(package)
+    if package.endswith('.git'):
+        package, _ = os.path.splitext(package)
     data = {
         "accountName": account,
         "projectSlug": slug,
