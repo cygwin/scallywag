@@ -21,6 +21,8 @@ cache:
 artifacts:
 - path: staging
   name: artifacts
+- path: '**\*.stackdump'
+  name: exceptions
 test: off
 notifications:
   provider: Webhook
