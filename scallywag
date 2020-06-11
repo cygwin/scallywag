@@ -47,13 +47,14 @@ package = analyze(os.getcwd())
 # compare target arch(es) and build environment
 arch = os.environ['BUILD'].split('-')[0]
 logging.info('build ARCH: %s, cygport ARCHes: %s' % (arch, package.arches))
+
 if 'noarch' in package.arches:
     # noarch packages get built using x86_64 environment
     if arch == 'x86_64':
         arch = 'noarch'
     else:
         arch = 'skip'
-else:
+elif package.arches:
     # otherwise, build if it builds on this environment
     if arch not in package.arches:
         arch = 'skip'
@@ -106,3 +107,7 @@ if package.kind == 'cygport':
     if dist:
         logging.info('publishing artifacts')
         shutil.move(dist[0], os.path.join(mydir, 'staging'))
+
+else:
+    logging.info("don't know how to build this package")
+    sys.exit(1)
