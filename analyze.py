@@ -83,7 +83,7 @@ def analyze(repodir):
             return PackageKind('cygport', script=fn, depends=depends, arches=arches)
 
     # if there's no cygport file, we look for a g-b-s style .sh file instead
-    scripts = [m for m in files if re.search(r'\.sh$', m.name)]
+    scripts = [m for m in files if re.search(r'\.sh$', m)]
     if len(scripts) == 1:
         fn = scripts[0]
         f = open(os.path.join(repodir, fn), 'rb')
