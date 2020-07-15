@@ -68,7 +68,7 @@ def hook():
         if arch != 'skip':
             arches.append(arch)
             if len(job['artifacts']):
-                artifacts[arch] = job['artifacts'][0]['permalink']
+                artifacts[arch] = job['id']
 
     arches = ' '.join(sorted(arches))
     logging.info('buildno: %d, passed %s, package: %s, commit: %s, arches: %s' % (buildnumber, passed, package, commit, arches))
@@ -79,30 +79,26 @@ def hook():
             conn.execute('UPDATE jobs SET srcpkg = ?, hash = ?, user = ?,  status = ?, logurl = ?, start_timestamp = ?, end_timestamp = ?, arches = ? WHERE id = ?',
                          (package, commit, maintainer, 'succeeded' if passed else 'failed', buildurl, started, finished, arches, buildnumber))
         else:
-            conn.execute('INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            conn.execute('INSERT INTO jobs (id, srcpkg, hash, user, status, logurl, start_timestamp, end_timestamp, arches) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
                          (buildnumber, package, commit, maintainer, 'succeeded' if passed else 'failed', buildurl, started, finished, arches))
-        conn.commit()
 
-    content = ''
-
-    # XXX: opt-in list for now
-    # XXX: allowing this to run under 'apache' user is problematic
-    if (reference == 'refs/heads/master') and (maintainer in []):
+    # XXX: opt-in list of maintainers for now
+    #
+    # Doing the fetch and deploy under the 'apache' user is not a good idea.
+    # Instead we mark the build as ready to fetch, which a separate process
+    # does.
+    if (reference == 'refs/heads/master') and (package != 'playground') and (maintainer in ['Jon Turney']):
         if passed:
-            for arch in artifacts:
-                try:
-                    content += subprocess.check_output([os.path.join(basedir, 'fetch-artifacts'),
-                                                        "\'%s\'" % maintainer, arch, artifacts[arch]])
-                except subprocess.CalledProcessError as e:
-                    content += e.output
+            with sqlite3.connect(carpetbag.dbfile) as conn:
+                conn.execute("UPDATE jobs SET status = 'fetching', artifacts = ? WHERE id = ?", (' '.join(artifacts.values()), buildnumber))
 
-    return '200 OK', content
+    return '200 OK', ''
 
 
 if __name__ == '__main__':
     with sqlite3.connect(carpetbag.dbfile) as conn:
         conn.execute('''CREATE TABLE IF NOT EXISTS jobs
-                     (id integer primary key, srcpkg text, hash text, user text, status text, logurl text, start_timestamp integer, end_timestamp integer, arches text)''')
+                     (id integer primary key, srcpkg text, hash text, user text, status text, logurl text, start_timestamp integer, end_timestamp integer, arches text, artifacts text)''')
 
     cgitb.enable(logdir='/tmp/scallywag/', format='text')
     try:

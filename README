@@ -33,16 +33,15 @@ c. POSTs to a notification webhook when the build is complete
 Extracts status and artifacts information from the job result.
 Extracts PACKAGE, MAINTAINER, COMMIT and ARCH from log message in the job result.
 
-Stores that information in an sqlite db.
+Stores all that information in an sqlite db.  Marks the artifacts as ready to
+fetch (for an opt-in list of packages, at the moment).
 
-jobs.cgi provides a web interface to examine that.
+jobs.cgi provides a web interface to examine that information.
 
-5. fetch-artifacts
+5. fetch.py
 
-XXX: not yet done
-
-Fetch the build artifacts to CYGNAME's upload area on sourceware, and request
-upload processing by calm.
+Fetch the build artifacts from Appveyor, unpack them into CYGNAME's upload area
+on sourceware, and request upload processing by calm.
 
 
 TODO:

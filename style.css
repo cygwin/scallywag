@@ -29,7 +29,7 @@ table.grid td {
     padding: 0.3em;
 }
 
-table.grid td.succeeded {
+table.grid td.succeeded, table.grid td.deployed {
     background-color: green;
 }
 

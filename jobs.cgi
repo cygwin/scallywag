@@ -27,7 +27,9 @@ import datetime
 import sqlite3
 import textwrap
 
-dbfn = '/sourceware/cygwin-staging/scallywag/carpetbag.db'
+import carpetbag
+
+dbfn = carpetbag.dbfile
 rows_per_page = 25
 conn = sqlite3.connect(dbfn)
 
@@ -59,7 +61,7 @@ def results(page, highlight):
 
     c = conn.execute('SELECT * FROM jobs ORDER BY id DESC LIMIT %d,%d' % ((page - 1) * rows_per_page, rows_per_page))
     for row in c:
-        (jobid, srcpkg, commit, username, status, logurl, start_ts, end_ts, arches) = row
+        (jobid, srcpkg, commit, username, status, logurl, start_ts, end_ts, arches, artifacts) = row
         commiturl = 'https://cygwin.com/git-cygwin-packages/?p=git/cygwin-packages/%s.git;a=commitdiff;h=%s' % (srcpkg, commit)
         shorthash = commit[0:8]
 
@@ -68,28 +70,31 @@ def results(page, highlight):
         else:
             result += '<tr>'
 
-        if status not in ['succeeded', 'failed']:
-            result += textwrap.dedent('''<td>%d</td>
-                                         <td>%s</td>
-                                         <td class="%s">%s</td>
-                                         <td>%s</td>
-                                         <td><a href="%s">%s</td>
-                                         <td></td>
-                                         <td></td>
-                                         <td></td>
-                                         <td></td>''') % (jobid, srcpkg, status, status, username, commiturl, shorthash)
+        result += textwrap.dedent('''<td>%d</td>
+                                     <td>%s</td>
+                                     <td class="%s">%s</td>
+                                     <td>%s</td>
+                                     <td><a href="%s">%s</td>''') % (jobid, srcpkg, status, status, username, commiturl, shorthash)
+
+        if logurl:
+            result += '<td><a href="%s">[log]</a></td>' % (logurl)
         else:
+            result += '<td></td>'
+
+        if arches:
+            result += '<td>%s</td>' % (arches)
+        else:
+            result += '<td></td>'
+
+        if end_ts and start_ts:
             elapsed = end_ts - start_ts
             start = datetime.datetime.fromtimestamp(start_ts).strftime('%Y-%m-%d %H:%M:%S')
-            result += textwrap.dedent('''<td>%d</td>
-                                         <td>%s</td>
-                                         <td class="%s">%s</td>
-                                         <td>%s</td>
-                                         <td><a href="%s">%s</td>
-                                         <td><a href="%s">[log]</a></td>
-                                         <td>%s</td>
-                                         <td>%s</td>
-                                         <td>%s</td>''') % (jobid, srcpkg, status, status, username, commiturl, shorthash, logurl, arches, start, elapsed)
+            result += textwrap.dedent('''<td>%s</td>
+                                         <td>%s</td>''') % (start, elapsed)
+        else:
+            result += textwrap.dedent('''<td></td>
+                                         <td></td>''')
+
         result += '</tr>'
 
     result += '</table>'
