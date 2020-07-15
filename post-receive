@@ -55,7 +55,7 @@ def post_receive(commit, reference):
 
     j = json.loads(response.read().decode('utf-8'))
     buildnumber = j['buildNumber']
-    print('scallywag: build %s queued' % buildnumber)
+    print('scallywag: build {0} queued https://cygwin.com/cgi-bin2/jobs.cgi?id={0}'.format(buildnumber))
 
     # record job as pending
     with sqlite3.connect(carpetbag.dbfile) as conn:

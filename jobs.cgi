@@ -32,7 +32,7 @@ rows_per_page = 25
 conn = sqlite3.connect(dbfn)
 
 
-def results(page):
+def results(page, highlight):
     result = textwrap.dedent('''\
                              <!DOCTYPE html>
                              <meta http-equiv="refresh" content="300">
@@ -62,8 +62,14 @@ def results(page):
         (jobid, srcpkg, commit, username, status, logurl, start_ts, end_ts, arches) = row
         commiturl = 'https://cygwin.com/git-cygwin-packages/?p=git/cygwin-packages/%s.git;a=commitdiff;h=%s' % (srcpkg, commit)
         shorthash = commit[0:8]
+
+        if jobid == highlight:
+            result += '<tr class="highlight">'
+        else:
+            result += '<tr>'
+
         if status not in ['succeeded', 'failed']:
-            result += textwrap.dedent('''<tr><td>%d</td>
+            result += textwrap.dedent('''<td>%d</td>
                                          <td>%s</td>
                                          <td class="%s">%s</td>
                                          <td>%s</td>
@@ -71,11 +77,11 @@ def results(page):
                                          <td></td>
                                          <td></td>
                                          <td></td>
-                                         <td></td></tr>''') % (jobid, srcpkg, status, status, username, commiturl, shorthash)
+                                         <td></td>''') % (jobid, srcpkg, status, status, username, commiturl, shorthash)
         else:
             elapsed = end_ts - start_ts
             start = datetime.datetime.fromtimestamp(start_ts).strftime('%Y-%m-%d %H:%M:%S')
-            result += textwrap.dedent('''<tr><td>%d</td>
+            result += textwrap.dedent('''<td>%d</td>
                                          <td>%s</td>
                                          <td class="%s">%s</td>
                                          <td>%s</td>
@@ -83,7 +89,8 @@ def results(page):
                                          <td><a href="%s">[log]</a></td>
                                          <td>%s</td>
                                          <td>%s</td>
-                                         <td>%s</td></tr>''') % (jobid, srcpkg, status, status, username, commiturl, shorthash, logurl, arches, start, elapsed)
+                                         <td>%s</td>''') % (jobid, srcpkg, status, status, username, commiturl, shorthash, logurl, arches, start, elapsed)
+        result += '</tr>'
 
     result += '</table>'
 
@@ -104,5 +111,9 @@ if __name__ == "__main__":
     cgitb.enable()
     print('Content-Type: text/html')
     print()
-    page = int(cgi.parse().get('page', [1])[0])
-    print(results(page))
+
+    parse = cgi.parse()
+    page = int(parse.get('page', [1])[0])
+    row = int(parse.get('id', [0])[0])
+
+    print(results(page, row))

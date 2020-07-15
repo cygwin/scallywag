@@ -1,0 +1,42 @@
+table.grid {
+    width: 95%;
+    margin-left:auto;
+    margin-right:auto;
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+
+table.grid th {
+    text-align: left;
+    border: 1px solid black;
+    border-collapse: collapse;
+    background-color: black;
+    color: white;
+    padding: 0.3em;
+}
+
+table.grid tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+table.grid tr.highlight {
+    background-color: #daa520;
+}
+
+table.grid td {
+    border: 1px solid black;
+    border-collapse: collapse;
+    padding: 0.3em;
+}
+
+table.grid td.succeeded {
+    background-color: green;
+}
+
+table.grid td.failed {
+    background-color: maroon;
+}
+
+.pagination {
+    text-align: center;
+}
