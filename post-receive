@@ -5,10 +5,13 @@
 
 import json
 import os
+import sqlite3
 import subprocess
 import sys
 import urllib.error
 import urllib.request
+
+import carpetbag
 
 account = subprocess.check_output(['git', 'config', 'appveyor.account']).strip().decode('ascii')
 token = subprocess.check_output(['git', 'config', 'appveyor.token']).strip().decode('ascii')
@@ -51,7 +54,14 @@ def post_receive(commit, reference):
         return
 
     j = json.loads(response.read().decode('utf-8'))
-    print('scallywag: build %s queued' % j['buildNumber'])
+    buildnumber = j['buildNumber']
+    print('scallywag: build %s queued' % buildnumber)
+
+    # record job as pending
+    with sqlite3.connect(carpetbag.dbfile) as conn:
+        conn.execute('INSERT INTO jobs (id, srcpkg, hash, user, status) VALUES (?, ?, ?, ?, ?)',
+                     (buildnumber, package, commit, maintainer, 'pending'))
+        conn.commit()
 
 
 if __name__ == '__main__':

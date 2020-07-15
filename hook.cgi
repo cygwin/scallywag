@@ -10,8 +10,9 @@ import subprocess
 import sys
 import time
 
+import carpetbag
+
 basedir = os.path.dirname(os.path.realpath(__file__))
-dbfile = os.path.join(basedir, 'carpetbag.db')
 authfile = os.path.join(basedir, 'auth')
 
 
@@ -72,9 +73,14 @@ def hook():
     arches = ' '.join(sorted(arches))
     logging.info('buildno: %d, passed %s, package: %s, commit: %s, arches: %s' % (buildnumber, passed, package, commit, arches))
 
-    with sqlite3.connect(dbfile) as conn:
-        conn.execute('INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                     (buildnumber, package, commit, maintainer, 'succeeded' if passed else 'failed', buildurl, started, finished, arches))
+    with sqlite3.connect(carpetbag.dbfile) as conn:
+        cursor = conn.execute('SELECT id FROM jobs WHERE id = ?', (buildnumber,))
+        if cursor.fetchone():
+            conn.execute('UPDATE jobs SET srcpkg = ?, hash = ?, user = ?,  status = ?, logurl = ?, start_timestamp = ?, end_timestamp = ?, arches = ? WHERE id = ?',
+                         (package, commit, maintainer, 'succeeded' if passed else 'failed', buildurl, started, finished, arches, buildnumber))
+        else:
+            conn.execute('INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                         (buildnumber, package, commit, maintainer, 'succeeded' if passed else 'failed', buildurl, started, finished, arches))
         conn.commit()
 
     content = ''
@@ -94,7 +100,7 @@ def hook():
 
 
 if __name__ == '__main__':
-    with sqlite3.connect(dbfile) as conn:
+    with sqlite3.connect(carpetbag.dbfile) as conn:
         conn.execute('''CREATE TABLE IF NOT EXISTS jobs
                      (id integer primary key, srcpkg text, hash text, user text, status text, logurl text, start_timestamp integer, end_timestamp integer, arches text)''')
 
