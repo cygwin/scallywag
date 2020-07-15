@@ -27,8 +27,8 @@ def hook():
     if os.environ['REQUEST_METHOD'] != 'POST':
         return '400 Bad Request', ''
 
-    # request originates from appveyor, or me
-    if os.environ['REMOTE_ADDR'] not in ['138.91.141.243', '86.158.32.4']:
+    # request originates from appveyor
+    if os.environ['REMOTE_ADDR'] not in ['138.91.141.243']:
         return '403 Forbidden', ''
 
     if not os.path.exists(authfile):
