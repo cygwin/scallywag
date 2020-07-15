@@ -62,17 +62,28 @@ def results(page):
         (jobid, srcpkg, commit, username, status, logurl, start_ts, end_ts, arches) = row
         commiturl = 'https://cygwin.com/git-cygwin-packages/?p=git/cygwin-packages/%s.git;a=commitdiff;h=%s' % (srcpkg, commit)
         shorthash = commit[0:8]
-        elapsed = end_ts - start_ts
-        start = datetime.datetime.fromtimestamp(start_ts).strftime('%Y-%m-%d %H:%M:%S')
-        result += textwrap.dedent('''<tr><td>%d</td>
-                                     <td>%s</td>
-                                     <td class="%s">%s</td>
-                                     <td>%s</td>
-                                     <td><a href="%s">%s</td>
-                                     <td><a href="%s">[log]</a></td>
-                                     <td>%s</td>
-                                     <td>%s</td>
-                                     <td>%s</td></tr>''') % (jobid, srcpkg, status, status, username, commiturl, shorthash, logurl, arches, start, elapsed)
+        if status not in ['succeeded', 'failed']:
+            result += textwrap.dedent('''<tr><td>%d</td>
+                                         <td>%s</td>
+                                         <td class="%s">%s</td>
+                                         <td>%s</td>
+                                         <td><a href="%s">%s</td>
+                                         <td></td>
+                                         <td></td>
+                                         <td></td>
+                                         <td></td></tr>''') % (jobid, srcpkg, status, status, username, commiturl, shorthash)
+        else:
+            elapsed = end_ts - start_ts
+            start = datetime.datetime.fromtimestamp(start_ts).strftime('%Y-%m-%d %H:%M:%S')
+            result += textwrap.dedent('''<tr><td>%d</td>
+                                         <td>%s</td>
+                                         <td class="%s">%s</td>
+                                         <td>%s</td>
+                                         <td><a href="%s">%s</td>
+                                         <td><a href="%s">[log]</a></td>
+                                         <td>%s</td>
+                                         <td>%s</td>
+                                         <td>%s</td></tr>''') % (jobid, srcpkg, status, status, username, commiturl, shorthash, logurl, arches, start, elapsed)
 
     result += '</table>'
 
