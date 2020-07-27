@@ -56,6 +56,8 @@ def hook():
 
     for job in j['eventData']['jobs']:
         messages = job['messages']
+        if not messages:
+            continue
         message = messages[0]['message']
 
         evars = {i[0]: i[1] for i in map(lambda m: m.split(': ', 1), message.split('; '))}
@@ -100,7 +102,7 @@ if __name__ == '__main__':
         conn.execute('''CREATE TABLE IF NOT EXISTS jobs
                      (id integer primary key, srcpkg text, hash text, user text, status text, logurl text, start_timestamp integer, end_timestamp integer, arches text, artifacts text)''')
 
-    cgitb.enable(logdir='/tmp/scallywag/', format='text')
+    cgitb.enable(logdir=basedir, format='text')
     try:
         status, content = hook()
         print('Status: %s' % status)
