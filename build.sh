@@ -2,6 +2,7 @@
 
 # SCRIPT names the build script to invoke
 SCRIPT=$1
+NOTEST=$2
 
 # installed packages may have added files to /etc/profile.d/, so re-read profile
 source /etc/profile
@@ -12,4 +13,7 @@ cd - >/dev/null
 cygport ${SCRIPT} all-test || exit 1
 
 # run the package's test suite
-cygport ${SCRIPT} test || exit 1
+if [ -z "$NOTEST" ]
+then
+   cygport ${SCRIPT} test || exit 1
+fi

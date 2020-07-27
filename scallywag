@@ -100,7 +100,8 @@ if package.kind == 'cygport':
 
     # do the build
     logging.info('building')
-    subprocess.check_call([os.path.join(mydir, 'build.sh'), package.script],
+    subprocess.check_call([os.path.join(mydir, 'build.sh'), package.script,
+                           'notest' if 'test' in package.restrict else ''],
                           stdin=subprocess.DEVNULL)
 
     # publish contents of dist as artifacts

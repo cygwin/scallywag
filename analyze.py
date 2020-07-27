@@ -27,7 +27,8 @@ import os
 import re
 
 
-PackageKind = namedtuple('PackageKind', 'kind script depends arches')
+PackageKind = namedtuple('PackageKind',
+                         ['kind', 'script', 'depends', 'arches', 'restrict'])
 
 
 #
@@ -41,7 +42,7 @@ def analyze(repodir):
     # more than one cygport!
     if len(cygports) > 1:
         logging.error('repository contains multiple .cygport files')
-        return PackageKind(None, '', set(), [])
+        return PackageKind(None, script='', depends=set(), arches=[], restrict=[])
 
     # exactly one cygport file
     if len(cygports) == 1:
@@ -61,6 +62,13 @@ def analyze(repodir):
         for match in matches:
             depend += match.group(1) + ' '
 
+        # extract any RESTRICT line
+        restrict = []
+        match = re.search(r'^\s*RESTRICT=\s*"?(.*?)"?$', content, re.MULTILINE)
+        if match:
+            restrict = match.group(1).split()
+            logging.info('cygport restrict: %s' % restrict)
+
         # extract any ARCH line
         arches = ['i686', 'x86_64']
         match = re.search(r'^\s*ARCH=\s*"?(.*?)"?$', content, re.MULTILINE)
@@ -76,11 +84,11 @@ def analyze(repodir):
             logging.info('repository contains cygport %s, with BUILD_REQUIRES' % fn)
             depends = set.union(depends_from_cygport(content),
                                 depends_from_depend(depend))
-            return PackageKind('cygport', script=fn, depends=depends, arches=arches)
         else:
             logging.info('repository contains cygport %s' % fn)
             depends = depends_from_cygport(content)
-            return PackageKind('cygport', script=fn, depends=depends, arches=arches)
+
+        return PackageKind('cygport', script=fn, depends=depends, arches=arches, restrict=restrict)
 
     # if there's no cygport file, we look for a g-b-s style .sh file instead
     scripts = [m for m in files if re.search(r'\.sh$', m)]
@@ -96,13 +104,13 @@ def analyze(repodir):
             kind = 'g-b-s'
 
         logging.info('repository contains a %s-style build script %s' % (kind, fn))
-        return PackageKind(kind, script=fn, depends=set(), arches=[])
+        return PackageKind(kind, script=fn, depends=set(), arches=[], restrict=[])
     elif len(scripts) > 1:
         logging.error('too many scripts in repository')
-        return PackageKind(None, '', set(), arches=[])
+        return PackageKind(None, script='', depends=set(), arches=[], restrict=[])
 
     logging.error("couldn't find build instructions in repository")
-    return PackageKind(None, '', set(), arches=[])
+    return PackageKind(None, script='', depends=set(), arches=[], restrict=[])
 
 
 #
