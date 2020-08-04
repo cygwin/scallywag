@@ -77,12 +77,11 @@ def hook():
 
     with sqlite3.connect(carpetbag.dbfile) as conn:
         cursor = conn.execute('SELECT id FROM jobs WHERE id = ?', (buildnumber,))
-        if cursor.fetchone():
-            conn.execute('UPDATE jobs SET srcpkg = ?, hash = ?, user = ?,  status = ?, logurl = ?, start_timestamp = ?, end_timestamp = ?, arches = ? WHERE id = ?',
-                         (package, commit, maintainer, 'succeeded' if passed else 'failed', buildurl, started, finished, arches, buildnumber))
-        else:
-            conn.execute('INSERT INTO jobs (id, srcpkg, hash, user, status, logurl, start_timestamp, end_timestamp, arches) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                         (buildnumber, package, commit, maintainer, 'succeeded' if passed else 'failed', buildurl, started, finished, arches))
+        if not cursor.fetchone():
+            conn.execute('INSERT INTO jobs (id, srcpkg, hash, ref, user) VALUES (?, ?, ?, ?, ?)',
+                         (buildnumber, package, commit, reference, maintainer))
+        conn.execute('UPDATE jobs SET status = ?, logurl = ?, start_timestamp = ?, end_timestamp = ?, arches = ? WHERE id = ?',
+                     ('succeeded' if passed else 'failed', buildurl, started, finished, arches, buildnumber))
 
     # XXX: opt-in list of maintainers for now
     #
@@ -100,7 +99,7 @@ def hook():
 if __name__ == '__main__':
     with sqlite3.connect(carpetbag.dbfile) as conn:
         conn.execute('''CREATE TABLE IF NOT EXISTS jobs
-                     (id integer primary key, srcpkg text, hash text, user text, status text, logurl text, start_timestamp integer, end_timestamp integer, arches text, artifacts text)''')
+                     (id integer primary key, srcpkg text, hash text, user text, status text, logurl text, start_timestamp integer, end_timestamp integer, arches text, artifacts text, ref text)''')
 
     cgitb.enable(logdir=basedir, format='text')
     try:

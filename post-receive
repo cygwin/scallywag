@@ -59,8 +59,8 @@ def post_receive(commit, reference):
 
     # record job as pending
     with sqlite3.connect(carpetbag.dbfile) as conn:
-        conn.execute('INSERT INTO jobs (id, srcpkg, hash, user, status) VALUES (?, ?, ?, ?, ?)',
-                     (buildnumber, package, commit, maintainer, 'pending'))
+        conn.execute('INSERT INTO jobs (id, srcpkg, hash, ref, user, status) VALUES (?, ?, ?, ?, ?, ?)',
+                     (buildnumber, package, commit, reference, maintainer, 'pending'))
         conn.commit()
 
 

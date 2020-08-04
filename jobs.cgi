@@ -48,6 +48,7 @@ def results(page, highlight):
                                  <th>status</th>
                                  <th>by</th>
                                  <th>commit</th>
+                                 <th>ref</th>
                                  <th>logs</th>
                                  <th>arch</th>
                                  <th>start</th>
@@ -61,7 +62,7 @@ def results(page, highlight):
 
     c = conn.execute('SELECT * FROM jobs ORDER BY id DESC LIMIT %d,%d' % ((page - 1) * rows_per_page, rows_per_page))
     for row in c:
-        (jobid, srcpkg, commit, username, status, logurl, start_ts, end_ts, arches, artifacts) = row
+        (jobid, srcpkg, commit, username, status, logurl, start_ts, end_ts, arches, artifacts, ref) = row
         commiturl = 'https://cygwin.com/git-cygwin-packages/?p=git/cygwin-packages/%s.git;a=commitdiff;h=%s' % (srcpkg, commit)
         shorthash = commit[0:8]
 
@@ -75,6 +76,13 @@ def results(page, highlight):
                                      <td class="%s">%s</td>
                                      <td>%s</td>
                                      <td><a href="%s">%s</td>''') % (jobid, srcpkg, status, status, username, commiturl, shorthash)
+
+        if ref:
+            ref = ref.replace('refs/heads/', '')
+            ref = ref.replace('refs/tags/', '')
+            result += '<td>%s</td>' % (ref)
+        else:
+            result += '<td></td>'
 
         if logurl:
             result += '<td><a href="%s">[log]</a></td>' % (logurl)
