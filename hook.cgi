@@ -101,6 +101,7 @@ if __name__ == '__main__':
         conn.execute('''CREATE TABLE IF NOT EXISTS jobs
                      (id integer primary key, srcpkg text, hash text, user text, status text, logurl text, start_timestamp integer, end_timestamp integer, arches text, artifacts text, ref text)''')
 
+    os.umask(0o022)
     cgitb.enable(logdir=basedir, format='text')
     try:
         status, content = hook()
