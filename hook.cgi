@@ -72,8 +72,8 @@ def hook():
             if len(job['artifacts']):
                 artifacts[arch] = job['id']
 
-    arches = ' '.join(sorted(arches))
-    logging.info('buildno: %d, passed %s, package: %s, commit: %s, arches: %s' % (buildnumber, passed, package, commit, arches))
+    arch_list = ' '.join(sorted(arches))
+    logging.info('buildno: %d, passed %s, package: %s, commit: %s, arches: %s' % (buildnumber, passed, package, commit, arch_list))
 
     with sqlite3.connect(carpetbag.dbfile) as conn:
         cursor = conn.execute('SELECT id FROM jobs WHERE id = ?', (buildnumber,))
@@ -81,7 +81,7 @@ def hook():
             conn.execute('INSERT INTO jobs (id, srcpkg, hash, ref, user) VALUES (?, ?, ?, ?, ?)',
                          (buildnumber, package, commit, reference, maintainer))
         conn.execute('UPDATE jobs SET status = ?, logurl = ?, start_timestamp = ?, end_timestamp = ?, arches = ? WHERE id = ?',
-                     ('succeeded' if passed else 'failed', buildurl, started, finished, arches, buildnumber))
+                     ('succeeded' if passed else 'failed', buildurl, started, finished, arch_list, buildnumber))
 
     # XXX: opt-in list of maintainers for now
     #
@@ -91,7 +91,7 @@ def hook():
     if (reference == 'refs/heads/master') and (package != 'playground') and (maintainer in ['Jon Turney']):
         if passed:
             with sqlite3.connect(carpetbag.dbfile) as conn:
-                conn.execute("UPDATE jobs SET status = 'fetching', artifacts = ? WHERE id = ?", (' '.join(artifacts.values()), buildnumber))
+                conn.execute("UPDATE jobs SET status = 'fetching', artifacts = ? WHERE id = ?", (' '.join([artifacts[a] for a in sorted(arches)]), buildnumber))
 
     return '200 OK', ''
 
