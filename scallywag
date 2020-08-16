@@ -74,13 +74,17 @@ if arch == 'skip':
 
 if package.kind == 'cygport':
     # install the build dependencies
+    install_packages = package.depends
+    if 'notest' not in package.tokens:
+        install_packages.update(package.test_requires)
+
     logging.info('installing build dependencies')
     subprocess.check_call([os.path.join('/', os.environ['SETUP'].strip()),
                            '-q', '-n', '-O',
                            '-R', os.environ['CYGWIN_ROOT'],
                            '-s', os.environ['CYGWIN_MIRROR'],
                            '-l', os.environ['CACHE'],
-                           '-P', ','.join(package.depends)])
+                           '-P', ','.join(install_packages)])
 
     # work-around setup's limited handling of obsolete packages by running it
     # again to upgrade any obsolete packages which just got installed

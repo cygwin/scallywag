@@ -27,9 +27,11 @@ import re
 
 
 class PackageKind:
-    def __init__(self, kind=None, script='', depends=None, arches=None, tokens=None):
+    def __init__(self, kind=None, script='', depends=None, arches=None, tokens=None, test_requires=None):
         if depends is None:
             depends = set()
+        if test_requires is None:
+            test_requires = set()
         if arches is None:
             arches = []
         if tokens is None:
@@ -38,6 +40,7 @@ class PackageKind:
         self.kind = kind
         self.script = script
         self.depends = depends
+        self.test_requires = test_requires
         self.arches = arches
         self.tokens = tokens
 
@@ -72,6 +75,17 @@ def analyze(repodir):
         matches = re.finditer(r'^\s*(?:DEPEND|BUILD_REQUIRES)(?:\+|)=\s*"(.*?)"', content, re.MULTILINE | re.DOTALL)
         for match in matches:
             depend += match.group(1) + ' '
+        if depend:
+            depends = depends_from_depend(depend)
+            logging.info('build dependencies (from BUILD_REQUIRES): %s' % (','.join(sorted(depends))))
+
+        # extract any TEST_REQUIRES line
+        test_requires = ''
+        match = re.search(r'^\s*TEST_REQUIRES=\s*"?(.*?)"?$', content, re.MULTILINE)
+        if match:
+            test_requires = match.group(1)
+            test_requires = depends_from_depend(test_requires)
+            logging.info('test dependencies (from TEST_REQUIRES): %s' % (','.join(sorted(test_requires))))
 
         # extract any SCALLYWAG line
         tokens = []
@@ -99,7 +113,7 @@ def analyze(repodir):
             logging.info('repository contains cygport %s' % fn)
             depends = depends_from_cygport(content)
 
-        return PackageKind(kind='cygport', script=fn, depends=depends, arches=arches, tokens=tokens)
+        return PackageKind(kind='cygport', script=fn, depends=depends, arches=arches, tokens=tokens, test_requires=test_requires)
 
     # if there's no cygport file, we look for a g-b-s style .sh file instead
     scripts = [m for m in files if re.search(r'\.sh$', m)]
@@ -241,5 +255,4 @@ def depends_from_depend(depend):
         else:
             build_deps.add(atom)
 
-    logging.info('build dependencies (from BUILD_REQUIRES): %s' % (','.join(sorted(build_deps))))
     return build_deps
