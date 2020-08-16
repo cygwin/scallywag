@@ -27,19 +27,19 @@ import re
 
 
 class PackageKind:
-    def __init__(self, kind=None, script='', depends=None, arches=None, restrict=None):
+    def __init__(self, kind=None, script='', depends=None, arches=None, tokens=None):
         if depends is None:
             depends = set()
         if arches is None:
             arches = []
-        if restrict is None:
-            restrict = []
+        if tokens is None:
+            tokens = []
 
         self.kind = kind
         self.script = script
         self.depends = depends
         self.arches = arches
-        self.restrict = restrict
+        self.tokens = tokens
 
 
 #
@@ -73,12 +73,12 @@ def analyze(repodir):
         for match in matches:
             depend += match.group(1) + ' '
 
-        # extract any RESTRICT line
-        restrict = []
-        match = re.search(r'^\s*RESTRICT=\s*"?(.*?)"?$', content, re.MULTILINE)
+        # extract any SCALLYWAG line
+        tokens = []
+        match = re.search(r'^\s*SCALLYWAG=\s*"?(.*?)"?$', content, re.MULTILINE)
         if match:
-            restrict = match.group(1).split()
-            logging.info('cygport restrict: %s' % restrict)
+            tokens = match.group(1).split()
+            logging.info('cygport SCALLYWAG: %s' % tokens)
 
         # extract any ARCH line
         arches = ['i686', 'x86_64']
@@ -99,7 +99,7 @@ def analyze(repodir):
             logging.info('repository contains cygport %s' % fn)
             depends = depends_from_cygport(content)
 
-        return PackageKind(kind='cygport', script=fn, depends=depends, arches=arches, restrict=restrict)
+        return PackageKind(kind='cygport', script=fn, depends=depends, arches=arches, tokens=tokens)
 
     # if there's no cygport file, we look for a g-b-s style .sh file instead
     scripts = [m for m in files if re.search(r'\.sh$', m)]

@@ -61,7 +61,7 @@ elif package.arches:
 
 # record package details using build worker API (so they appear in build notification)
 data = {
-    "message": 'PACKAGE: %s; COMMIT: %s; ARCH: %s; MAINTAINER: %s; REFERENCE: %s' % (name, commit, arch, maintainer, reference),
+    "message": 'PACKAGE: %s; COMMIT: %s; ARCH: %s; MAINTAINER: %s; REFERENCE: %s; TOKENS: %s' % (name, commit, arch, maintainer, reference, ' '.join(package.tokens)),
 }
 
 req = urllib.request.Request(os.environ['APPVEYOR_API_URL'] + 'api/build/messages')
@@ -101,7 +101,7 @@ if package.kind == 'cygport':
     # do the build
     logging.info('building')
     subprocess.check_call([os.path.join(mydir, 'build.sh'), package.script,
-                           'notest' if 'test' in package.restrict else ''],
+                           'notest' if 'notest' in package.tokens else ''],
                           stdin=subprocess.DEVNULL)
 
     # publish contents of dist as artifacts
