@@ -61,6 +61,9 @@ def hook():
         message = messages[0]['message']
 
         evars = {i[0]: i[1] for i in map(lambda m: m.split(': ', 1), message.split('; '))}
+        if 'ARCH' not in evars:
+            continue
+
         package = evars['PACKAGE']
         commit = evars['COMMIT']
         reference = evars['REFERENCE']
