@@ -56,24 +56,25 @@ def hook():
 
     for job in j['eventData']['jobs']:
         messages = job['messages']
-        if not messages:
-            continue
-        message = messages[0]['message']
 
-        evars = {i[0]: i[1] for i in map(lambda m: m.split(': ', 1), message.split('; '))}
-        if 'ARCH' not in evars:
-            continue
+        for m in messages:
+            message = m['message']
+            if 'ARCH' not in message:
+                continue
 
-        package = evars['PACKAGE']
-        commit = evars['COMMIT']
-        reference = evars['REFERENCE']
-        arch = evars['ARCH'].replace('i686', 'x86')
-        maintainer = evars['MAINTAINER']
+            evars = {i[0]: i[1] for i in map(lambda m: m.split(': ', 1), message.split('; '))}
+            package = evars['PACKAGE']
+            commit = evars['COMMIT']
+            reference = evars['REFERENCE']
+            arch = evars['ARCH'].replace('i686', 'x86')
+            maintainer = evars['MAINTAINER']
 
-        if arch != 'skip':
-            arches.append(arch)
-            if len(job['artifacts']):
-                artifacts[arch] = job['id']
+            if arch != 'skip':
+                arches.append(arch)
+                if len(job['artifacts']):
+                    artifacts[arch] = job['id']
+
+            break
 
     arch_list = ' '.join(sorted(arches))
     logging.info('buildno: %d, passed %s, package: %s, commit: %s, arches: %s' % (buildnumber, passed, package, commit, arch_list))
