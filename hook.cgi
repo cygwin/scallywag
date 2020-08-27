@@ -23,6 +23,13 @@ def parse_time(s):
     return int(t)
 
 
+def opt_in(maintainer):
+    if maintainer in ['Jon Turney']:
+        return True
+
+    return False
+
+
 def hook():
     if os.environ['REQUEST_METHOD'] != 'POST':
         return '400 Bad Request', ''
@@ -68,6 +75,7 @@ def hook():
             reference = evars['REFERENCE']
             arch = evars['ARCH'].replace('i686', 'x86')
             maintainer = evars['MAINTAINER']
+            tokens = evars['TOKENS']
 
             if arch != 'skip':
                 arches.append(arch)
@@ -92,7 +100,7 @@ def hook():
     # Doing the fetch and deploy under the 'apache' user is not a good idea.
     # Instead we mark the build as ready to fetch, which a separate process
     # does.
-    if (reference == 'refs/heads/master') and (package != 'playground') and (maintainer in ['Jon Turney']):
+    if (reference == 'refs/heads/master') and (package != 'playground') and ('nodeploy' not in tokens) and opt_in(maintainer):
         if passed:
             with sqlite3.connect(carpetbag.dbfile) as conn:
                 conn.execute("UPDATE jobs SET status = 'fetching', artifacts = ? WHERE id = ?", (' '.join([artifacts[a] for a in sorted(arches)]), buildnumber))
