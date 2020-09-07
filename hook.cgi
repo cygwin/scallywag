@@ -27,7 +27,7 @@ def opt_in(maintainer, tokens):
     if maintainer in ['Jon Turney']:
         return True
 
-    if maintainer in ['Ken Brown'] and 'deploy' in tokens:
+    if maintainer in ['Ken Brown', 'Alexey Sokolov'] and 'deploy' in tokens:
         return True
 
     return False
