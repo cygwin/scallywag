@@ -99,6 +99,7 @@ def logging_setup():
 def main():
     context = daemon.DaemonContext(stdout=sys.stdout,
                                    stderr=sys.stderr,
+                                   umask=0o002,
                                    pidfile=lockfile.pidlockfile.PIDLockFile('/sourceware/cygwin-staging/scallywag-fetch.pid'))
 
     def sigterm(signum, frame):
