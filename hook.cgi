@@ -9,6 +9,7 @@ import sqlite3
 import subprocess
 import sys
 import time
+import traceback
 
 import carpetbag
 
@@ -116,14 +117,15 @@ if __name__ == '__main__':
         conn.execute('''CREATE TABLE IF NOT EXISTS jobs
                      (id integer primary key, srcpkg text, hash text, user text, status text, logurl text, start_timestamp integer, end_timestamp integer, arches text, artifacts text, ref text)''')
 
-    os.umask(0o022)
-    cgitb.enable(logdir=basedir, format='text')
+    cgitb.enable()
     try:
         status, content = hook()
         print('Status: %s' % status)
         print()
         print(content)
     except BaseException:
+        # log exception to stderr
+        traceback.print_exc()
         # allow cgitb to do it's thing
         print('Content-Type: text/plain')
         print('Status: 422')
