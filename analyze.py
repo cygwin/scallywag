@@ -100,8 +100,8 @@ def analyze(repodir):
         if match:
             arches = match.group(1).split()
 
-        # 'inherit cross' implies ARCH=noarch
-        match = re.search(r'^\s*inherit\s*cross', content, re.MULTILINE)
+        # some 'inherit's imply ARCH=noarch
+        match = re.search(r'^\s*inherit\s*(cross|texlive)', content, re.MULTILINE)
         if match:
             arches = 'noarch'
 
