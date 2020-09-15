@@ -72,6 +72,10 @@ if arch == 'skip':
     logging.info('nothing to build on this arch')
     sys.exit(0)
 
+if 'nobuild' in package.tokens:
+    logging.info('not building due to nobuild')
+    sys.exit(0)
+
 if package.kind == 'cygport':
     # install the build dependencies
     install_packages = package.depends

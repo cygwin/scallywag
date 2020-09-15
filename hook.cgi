@@ -25,6 +25,9 @@ def parse_time(s):
 
 
 def opt_in(maintainer, tokens):
+    if 'nobuild' in tokens:
+        return False
+
     if maintainer in ['Jon Turney']:
         return True
 
@@ -99,15 +102,17 @@ def hook():
         conn.execute('UPDATE jobs SET status = ?, logurl = ?, start_timestamp = ?, end_timestamp = ?, arches = ? WHERE id = ?',
                      ('succeeded' if passed else 'failed', buildurl, started, finished, arch_list, buildnumber))
 
-    # XXX: opt-in list of maintainers for now
-    #
-    # Doing the fetch and deploy under the 'apache' user is not a good idea.
-    # Instead we mark the build as ready to fetch, which a separate process
-    # does.
-    if (reference == 'refs/heads/master') and (package != 'playground') and ('nodeploy' not in tokens) and opt_in(maintainer, tokens):
-        if passed:
-            with sqlite3.connect(carpetbag.dbfile) as conn:
+        # XXX: opt-in list of maintainers for now
+        #
+        # Doing the fetch and deploy under the 'apache' user is not a good idea.
+        # Instead we mark the build as ready to fetch, which a separate process
+        # does.
+        if (reference == 'refs/heads/master') and (package != 'playground') and ('nodeploy' not in tokens) and opt_in(maintainer, tokens):
+            if passed:
                 conn.execute("UPDATE jobs SET status = 'fetching', artifacts = ? WHERE id = ?", (' '.join([artifacts[a] for a in sorted(arches)]), buildnumber))
+
+        if 'nobuild' in tokens:
+            conn.execute("UPDATE jobs SET status = 'not built' WHERE id = ?", (buildnumber,))
 
     return '200 OK', ''
 
