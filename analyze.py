@@ -61,6 +61,9 @@ def analyze(repodir):
         f = open(os.path.join(repodir, fn))
         content = f.read()
 
+        # discard comments
+        content = re.sub(r'#.*$', '', content)
+
         # fold any line-continuations
         content = re.sub(r'\\\n', '', content)
 
