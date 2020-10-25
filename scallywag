@@ -23,7 +23,7 @@ commit = os.environ['COMMIT']
 reference = os.environ['REFERENCE']
 
 # make a directory for working with the package repo
-mydir = os.environ['APPVEYOR_BUILD_FOLDER']
+mydir = os.getcwd()
 os.chdir(os.path.join(mydir, '..'))
 os.mkdir(name)
 os.chdir(name)
@@ -103,9 +103,9 @@ if package.kind == 'cygport':
 
     # do the build
     logging.info('building')
-    subprocess.check_call([os.path.join(mydir, 'build.sh'), package.script,
-                           'notest' if 'notest' in package.tokens else ''],
-                          stdin=subprocess.DEVNULL)
+    rc = subprocess.call([os.path.join(mydir, 'build.sh'), package.script,
+                          'notest' if 'notest' in package.tokens else ''],
+                         stdin=subprocess.DEVNULL)
 
     # publish contents of dist as artifacts
     dist = glob.glob(os.path.join('*', 'dist'))
@@ -113,6 +113,11 @@ if package.kind == 'cygport':
         logging.info('publishing artifacts')
         shutil.move(dist[0], os.path.join(mydir, 'staging'))
 
+    # publish an archive with contents of builddir
+    subprocess.check_call('tar -Jcf %s *' % (os.path.join(mydir, 'builddir.tar.xz')),
+                          shell=True)
+
+    sys.exit(rc)
 else:
     logging.info("don't know how to build this package")
     sys.exit(1)

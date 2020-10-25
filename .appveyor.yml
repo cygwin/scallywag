@@ -14,6 +14,7 @@ install:
 - echo Updating Cygwin
 - '%CYGWIN_ROOT%\%SETUP% -qnNdO -R %CYGWIN_ROOT% -s %CYGWIN_MIRROR% -l %CACHE% -g -P cygport,python3'
 build_script:
+- SET ORIG_PATH=%PATH%
 - SET PATH=%CYGWIN_ROOT%/bin
 - '%CYGWIN_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER; ./scallywag"'
 cache:
@@ -22,8 +23,8 @@ artifacts:
 - path: staging
   name: artifacts
 on_finish:
-- '%CYGWIN_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER; find -name *.stackdump | tar -Jcf stackdumps.tar.xz --files-from -"'
-- appveyor PushArtifact stackdumps.tar.xz
+- SET PATH=%ORIG_PATH%
+- appveyor PushArtifact builddir.tar.xz -DeploymentName builddir || true
 test: off
 notifications:
   provider: Webhook
