@@ -78,6 +78,9 @@ elif package.arches:
     # otherwise, build if it builds on this environment
     if arch not in package.arches + ['source']:
         arch = 'skip'
+else:
+    logging.info('arch(es) to build for could not be determined')
+    sys.exit(1)
 
 data_items = {
     'BUILDNUMBER': buildnumber,

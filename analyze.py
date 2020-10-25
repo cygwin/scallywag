@@ -24,6 +24,8 @@
 import logging
 import os
 import re
+import subprocess
+import sys
 
 
 class PackageKind:
@@ -42,6 +44,29 @@ class PackageKind:
         self.tokens = tokens
 
 
+var_list = [
+    'ARCHES',
+    'BUILD_REQUIRES',
+    'CROSS_HOST',
+    'DEPEND',
+    'INHERITED',
+    'SCALLYWAG',
+]
+var_values = {}
+
+
+def get_var(var, default=None):
+    if var not in var_list:
+        logging.error('unanticipated variable %s' % var)
+
+    if var not in var_values:
+        if default is None:
+            logging.error('variable %s not set but has no default' % var)
+        return default
+
+    return var_values.get(var)
+
+
 #
 # analyze the source repository
 #
@@ -58,52 +83,48 @@ def analyze(repodir, default_tokens):
     # exactly one cygport file
     if len(cygports) == 1:
         fn = cygports[0]
-        f = open(os.path.join(repodir, fn))
-        content = f.read()
+        logging.info('repository contains cygport %s' % fn)
 
-        # discard comments
-        content = re.sub(r'#.*$', '', content)
+        # extract interesting variables from cygport
+        output = subprocess.check_output(['cygport', fn, 'vars'] + var_list,
+                                         stderr=subprocess.DEVNULL).decode()
+        # elide any information messages
+        output = re.sub(r'^\x1b.*\*\*\* Info:.*\n', r'', output, flags=re.MULTILINE)
 
-        # fold any line-continuations
-        content = re.sub(r'\\\n', '', content)
+        for m in re.finditer(r'^(?:declare -[-r] |)(.*?)="(.*?)"$', output, re.MULTILINE | re.DOTALL):
+            # TBD: handle shell escapes in value?
+            var_values[m.group(1)] = m.group(2)
+            logging.info('%s="%s"' % (m.group(1), m.group(2)))
+
+        # workaround for a bug cygport
+        # (arch probing gets information messages from nested invocation into ARCH)
+        if '***' in get_var('ARCHES'):
+            var_values['ARCHES'] = 'all'
 
         # does it have a BUILD_REQUIRES or DEPEND line?
-
-        # Note that this only approximates the value.  The only accurate way to
-        # evaluate it is to execute the cygport.
-        depend = ''
-        matches = re.finditer(r'^\s*(?:DEPEND|BUILD_REQUIRES)(?:\+|)=\s*"(.*?)"', content, re.MULTILINE | re.DOTALL)
-        for match in matches:
-            depend += match.group(1) + ' '
-        if depend:
-            depends = depends_from_depend(depend)
-            logging.info('build dependencies (from BUILD_REQUIRES): %s' % (','.join(sorted(depends))))
+        depends = get_var('BUILD_REQUIRES', '') + ' ' + get_var('DEPEND', '')
+        depends = depends_from_depend(depends)
+        logging.info('build dependencies (from BUILD_REQUIRES): %s' % (','.join(sorted(depends))))
 
         # extract any SCALLYWAG line
         tokens = default_tokens
-        match = re.search(r'^\s*SCALLYWAG=\s*"?(.*?)"?$', content, re.MULTILINE)
-        if match:
-            tokens.extend(match.group(1).split())
+        scallywag = get_var('SCALLYWAG', '')
+        if scallywag:
+            tokens.extend(scallywag.split())
             logging.info('cygport SCALLYWAG: %s' % tokens)
 
-        # extract any ARCH line
-        arches = ['x86_64']
-        match = re.search(r'^\s*ARCH=\s*"?(.*?)"?$', content, re.MULTILINE)
-        if match:
-            arches = match.group(1).split()
+        # detect if there is an ARCH line
+        arches = get_var('ARCHES')
+        if arches == 'all':
+            arches = 'x86_64'
+        arches = arches.split()
 
         # some 'inherit's imply ARCH=noarch
-        match = re.search(r'^\s*inherit\s*(cross|texlive)', content, re.MULTILINE)
-        if match:
+        inherited = get_var('INHERITED').split()
+        if any(i in inherited for i in ['cross', 'texlive']):
             arches = ['noarch']
 
-        if depend:
-            logging.info('repository contains cygport %s, with BUILD_REQUIRES' % fn)
-            depends = set.union(depends_from_cygport(content),
-                                depends_from_depend(depend))
-        else:
-            logging.info('repository contains cygport %s' % fn)
-            depends = depends_from_cygport(content)
+        depends = set.union(depends, depends_from_inherits(inherited))
 
         return PackageKind(kind='cygport', script=fn, depends=depends, arches=arches, tokens=tokens)
 
@@ -143,14 +164,8 @@ cross_package_prefixes = {
 }
 
 
-def depends_from_cygport(content):
+def depends_from_inherits(inherits):
     build_deps = set()
-    inherits = set()
-
-    for l in content.splitlines():
-        match = re.match('^inherit(.*)', l)
-        if match:
-            inherits.update(match.group(1).split())
 
     logging.info('cygport inherits: %s' % ','.join(sorted(inherits)))
 
@@ -190,7 +205,7 @@ def depends_from_cygport(content):
 
     # for cross-packages, we need the appropriate cross-toolchain
     if 'cross' in inherits:
-        cross_host = re.search(r'^CROSS_HOST\s*=\s*"?(.*?)"?\s*$', content, re.MULTILINE).group(1)
+        cross_host = get_var('CROSS_HOST')
         pkg_prefix = cross_package_prefixes.get(cross_host, '')
         logging.info('cross_host: %s, pkg_prefix: %s' % (cross_host, pkg_prefix))
 
@@ -225,3 +240,13 @@ def depends_from_depend(depend):
             build_deps.add(atom)
 
     return build_deps
+
+
+#
+# analyse the specified directory
+#
+
+if __name__ == '__main__':
+    logging.getLogger().setLevel(logging.INFO)
+    logging.basicConfig(format=os.path.basename(sys.argv[0]) + ': %(message)s')
+    print(analyze(sys.argv[1], []).__dict__)
