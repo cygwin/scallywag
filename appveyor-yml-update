@@ -8,4 +8,6 @@
 # it in this repository
 #
 
+APPVEYOR_TOKEN=$(git config appveyor.token)
+
 curl -H "Authorization: Bearer $APPVEYOR_TOKEN" -H "Content-Type: plain/text" -T .appveyor.yml https://ci.appveyor.com/api/projects/cygwin/scallywag/settings/yaml
