@@ -24,14 +24,14 @@ def parse_time(s):
     return int(t)
 
 
-def opt_in(maintainer, tokens):
-    if 'nobuild' in tokens:
+def deploy(maintainer, tokens):
+    if ('nobuild' in tokens) or ('nodeploy' in tokens):
         return False
 
-    if maintainer in ['Jon Turney']:
+    if 'deploy' in tokens:
         return True
 
-    if maintainer in ['Ken Brown', 'Alexey Sokolov'] and 'deploy' in tokens:
+    if maintainer in ['Jon Turney']:
         return True
 
     return False
@@ -107,7 +107,7 @@ def hook():
         # Doing the fetch and deploy under the 'apache' user is not a good idea.
         # Instead we mark the build as ready to fetch, which a separate process
         # does.
-        if (reference == 'refs/heads/master') and (package != 'playground') and ('nodeploy' not in tokens) and opt_in(maintainer, tokens):
+        if (reference == 'refs/heads/master') and (package != 'playground') and deploy(maintainer, tokens):
             if passed:
                 conn.execute("UPDATE jobs SET status = 'fetching', artifacts = ? WHERE id = ?", (' '.join([artifacts[a] for a in sorted(arches)]), buildnumber))
 
