@@ -37,9 +37,12 @@ conn = sqlite3.connect(dbfn)
 def results(page, highlight):
     result = textwrap.dedent('''\
                              <!DOCTYPE html>
+                             <html lang="en">
+                             <head>
                              <meta http-equiv="refresh" content="300">
                              <link rel="stylesheet" type="text/css" href="/static/builds/style.css" />
-                             <html>
+                             <title>Cygwin package builds</title>
+                             </head>
                              <body>
                              <table class="grid">''')
 
@@ -71,11 +74,16 @@ def results(page, highlight):
         else:
             result += '<tr>'
 
+        if srcpkg != 'playground':
+            srcpkglink = '<a href="https://cygwin.com/packages/summary/%s-src.html">%s</a>' % (srcpkg, srcpkg)
+        else:
+            srcpkglink = '%s' % (srcpkg)
+
         result += textwrap.dedent('''<td>%d</td>
                                      <td>%s</td>
                                      <td class="%s">%s</td>
                                      <td>%s</td>
-                                     <td><a href="%s">%s</td>''') % (jobid, srcpkg, status, status, username, commiturl, shorthash)
+                                     <td><a href="%s">%s</a></td>''') % (jobid, srcpkglink, status, status, username, commiturl, shorthash)
 
         if ref:
             ref = ref.replace('refs/heads/', '')
