@@ -168,7 +168,7 @@ def depends_from_cygport(content):
             (['python2-wheel', 'python-wheel'], ['python2-wheel', 'python2-pip']),
             (['python3'], ['python3']),
             (['python3-distutils'], ['python3-setuptools', 'python3-devel']),
-            (['python3-wheel', 'python-wheel'], ['python36-wheel', 'python36-pip', 'python37-wheel', 'python37-pip', 'python38-wheel', 'python38-pip']),  # done correctly, this needs to understand PYTHON_WHEEL_VERSIONS
+            (['python3-wheel', 'python-wheel'], ['python3-devel', 'python36-wheel', 'python36-pip', 'python37-wheel', 'python37-pip', 'python38-wheel', 'python38-pip']),  # done correctly, this needs to understand PYTHON_WHEEL_VERSIONS
             (['texlive'], ['texlive-collection-basic']),  # to ensure correct run-time dependency generation
             (['xfce4'], ['xfce4-dev-tools']),
             (['xorg'], ['xorg-util-macros']),
