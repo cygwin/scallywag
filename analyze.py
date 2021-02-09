@@ -157,9 +157,9 @@ def depends_from_cygport(content):
     # if we have any of the inherits in the first list, add the second list to
     # depends
     for (pos, deps) in [
-            (['cmake', 'kde4', 'qt4-cmake'], ['cmake']),
+            (['cmake', 'kde4', 'kf5', 'qt4-cmake'], ['cmake', 'ninja', 'make']),
             (['gnome2'], ['gnome-common']),
-            (['kf5'], ['cmake', 'extra-cmake-modules']),
+            (['kf5'], ['extra-cmake-modules']),
             (['mate'], ['mate-common']),
             (['meson'], ['meson']),
             (['ninja'], ['ninja']),
