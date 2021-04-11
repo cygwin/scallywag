@@ -26,6 +26,7 @@ import cgitb
 import datetime
 import sqlite3
 import textwrap
+from urllib.parse import urlencode
 
 import carpetbag
 
@@ -34,7 +35,10 @@ rows_per_page = 25
 conn = sqlite3.connect(dbfn)
 
 
-def results(page, highlight):
+def results(parse):
+    page = int(parse.get('page', 1))
+    highlight = int(parse.get('id', 0))
+
     result = textwrap.dedent('''\
                              <!DOCTYPE html>
                              <html lang="en">
@@ -57,13 +61,49 @@ def results(page, highlight):
                                  <th>start</th>
                                  <th>elapsed</th></tr>''')
 
-    c = conn.execute('SELECT COUNT(*) FROM jobs')
+    def options_list(column):
+        selected = parse.get(column, '')
+        sql = 'SELECT DISTINCT %s FROM jobs ORDER BY %s' % (column, column)
+        c = conn.execute(sql)
+        opts = [''] + [r[0] for r in c]
+        return ('<select name="%s" form="filter">' % (column)
+                + ''.join(['<option%s>%s</option>' % (' selected' if o == selected else '', o) for o in opts])
+                + '</select>')
+
+    result += textwrap.dedent('''<tr><td><form id="filter" method="get"><button>Filter</button></form></td>
+                                 <td>%s</td>
+                                 <td>%s</td>
+                                 <td>%s</td>
+                                 <td></td>
+                                 <td></td>
+                                 <td></td>
+                                 <td></td>
+                                 <td></td>
+                                 <td></td></tr>''' % (options_list('srcpkg'),
+                                                      options_list('status'),
+                                                      options_list('user')))
+
+    where_list = []
+    where_params = ()
+    for w in ['user', 'status', 'srcpkg']:
+        if w in parse:
+            where_list.append("%s = ?" % (w))
+            where_params = where_params + (parse[w],)
+    where_clause = ''
+    if where_list:
+        where_clause = 'WHERE ' + 'AND '.join(where_list)
+
+    sql = 'SELECT COUNT(*) FROM jobs %s' % (where_clause)
+    c = conn.execute(sql, where_params)
     (rows,) = c.fetchone()
-    maxpages = (rows + (rows_per_page - 1)) / rows_per_page
+    maxpages = int((rows + (rows_per_page - 1)) / rows_per_page)
     if page < 1:
         page = 1
+    if page > maxpages:
+        page = maxpages
 
-    c = conn.execute('SELECT * FROM jobs ORDER BY id DESC LIMIT %d,%d' % ((page - 1) * rows_per_page, rows_per_page))
+    sql = 'SELECT * FROM jobs %s' % where_clause + 'ORDER BY id DESC LIMIT ?,?'
+    c = conn.execute(sql, where_params + ((page - 1) * rows_per_page, rows_per_page))
     for row in c:
         (jobid, srcpkg, commit, username, status, logurl, start_ts, end_ts, arches, artifacts, ref) = row
         commiturl = 'https://cygwin.com/git-cygwin-packages/?p=git/cygwin-packages/%s.git;a=commitdiff;h=%s' % (srcpkg, commit)
@@ -115,12 +155,16 @@ def results(page, highlight):
 
     result += '</table>'
 
+    def query_string_modify_page(page):
+        parse['page'] = page
+        return urlencode(parse)
+
     result += '<div class="pagination">'
     if page > 1:
-        result += '<a href="?page=%d">previous</a>' % (page - 1)
+        result += '<a href="?%s">previous</a>' % query_string_modify_page(page - 1)
     result += ' page %d of %d ' % (page, maxpages)
     if page < (maxpages - 1):
-        result += '<a href="?page=%d">next</a>' % (page + 1)
+        result += '<a href="?%s">next</a>' % query_string_modify_page(page + 1)
     result += '</div>'
 
     result += textwrap.dedent('''</body>
@@ -134,7 +178,9 @@ if __name__ == "__main__":
     print()
 
     parse = cgi.parse()
-    page = int(parse.get('page', [1])[0])
-    row = int(parse.get('id', [0])[0])
 
-    print(results(page, row))
+    # if any query variable appears more than once, use the value of the last
+    # occurence.
+    parse = {k:v[-1] for k, v in parse.items()}
+
+    print(results(parse))
