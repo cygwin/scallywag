@@ -46,7 +46,7 @@ class PackageKind:
 # analyze the source repository
 #
 
-def analyze(repodir):
+def analyze(repodir, default_tokens):
     files = os.listdir(repodir)
     cygports = [m for m in files if re.search(r'\.cygport$', m)]
 
@@ -80,10 +80,10 @@ def analyze(repodir):
             logging.info('build dependencies (from BUILD_REQUIRES): %s' % (','.join(sorted(depends))))
 
         # extract any SCALLYWAG line
-        tokens = []
+        tokens = default_tokens
         match = re.search(r'^\s*SCALLYWAG=\s*"?(.*?)"?$', content, re.MULTILINE)
         if match:
-            tokens = match.group(1).split()
+            tokens.extend(match.group(1).split())
             logging.info('cygport SCALLYWAG: %s' % tokens)
 
         # extract any ARCH line

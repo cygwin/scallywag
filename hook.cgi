@@ -31,9 +31,6 @@ def deploy(maintainer, tokens):
     if 'deploy' in tokens:
         return True
 
-    if maintainer in ['Jon Turney']:
-        return True
-
     return False
 
 
@@ -102,8 +99,6 @@ def hook():
         conn.execute('UPDATE jobs SET status = ?, logurl = ?, start_timestamp = ?, end_timestamp = ?, arches = ? WHERE id = ?',
                      ('succeeded' if passed else 'failed', buildurl, started, finished, arch_list, buildnumber))
 
-        # XXX: opt-in list of maintainers for now
-        #
         # Doing the fetch and deploy under the 'apache' user is not a good idea.
         # Instead we mark the build as ready to fetch, which a separate process
         # does.

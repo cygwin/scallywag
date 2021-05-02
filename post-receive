@@ -22,6 +22,17 @@ def post_receive(commit, reference):
     repo = os.environ['GL_REPO']  # set by gitolite
     maintainer = os.environ['CYGNAME']  # set for ssh-wrapper
 
+    default_tokens = ''
+    try:
+        with open(os.path.join('/sourceware/cygwin-staging/home', maintainer, '!scallywag')) as f:
+            default_tokens = ''.join([l.strip() for l in f.readlines()])
+    except FileNotFoundError:
+        pass
+
+    if 'disable' in default_tokens:
+        print('scallywag: disabled by you')
+        return
+
     _, package = os.path.split(repo)
     if package.endswith('.git'):
         package, _ = os.path.splitext(package)
@@ -34,6 +45,7 @@ def post_receive(commit, reference):
             "MAINTAINER": maintainer,
             "COMMIT": commit,
             "REFERENCE": reference,
+            "DEFAULT_TOKENS": default_tokens,
         }
     }
 
@@ -55,7 +67,8 @@ def post_receive(commit, reference):
 
     j = json.loads(response.read().decode('utf-8'))
     buildnumber = j['buildNumber']
-    print('scallywag: build {0} queued https://cygwin.com/cgi-bin2/jobs.cgi?id={0}'.format(buildnumber))
+    print('scallywag: build {0} queued'.format(buildnumber))
+    print('scallywag: https://cygwin.com/cgi-bin2/jobs.cgi?id={0}'.format(buildnumber))
 
     # record job as pending
     with sqlite3.connect(carpetbag.dbfile) as conn:

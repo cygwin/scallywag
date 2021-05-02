@@ -21,6 +21,7 @@ logging.info('package is %s' % (name))
 maintainer = os.environ['MAINTAINER']
 commit = os.environ['COMMIT']
 reference = os.environ['REFERENCE']
+default_tokens = os.environ.get('DEFAULT_TOKENS', '')
 
 # make a directory for working with the package repo
 mydir = os.getcwd()
@@ -42,7 +43,7 @@ except subprocess.CalledProcessError:
     logging.info('something went wrong cloning the package repo')
 
 # analyze the repo
-package = analyze(os.getcwd())
+package = analyze(os.getcwd(), default_tokens.split())
 
 # compare target arch(es) and build environment
 arch = os.environ['BUILD'].split('-')[0]
