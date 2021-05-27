@@ -1,0 +1,79 @@
+name: scallywag
+on:
+  - repository_dispatch
+
+# set restricted permissions for GITHUB_TOKEN
+permissions:
+  contents: read
+
+jobs:
+  scallywag:
+    runs-on: windows-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - NAME: x86_64
+            PKGARCH: x86_64
+          - NAME: i686
+            PKGARCH: x86
+          - NAME: noarch
+            PKGARCH: x86_64
+
+    name: ${{ matrix.NAME }}
+
+    env:
+      # knows too much about cygwin/cygwin-install-action internals
+      SETUP: C:\setup.exe
+      CYGWIN_ROOT: C:\cygwin
+      CYGWIN_MIRROR: http://mirrors.kernel.org/sourceware/cygwin/
+      CACHE: C:\cygwin-packages
+      BUILD: ${{ matrix.NAME }}
+
+    steps:
+      - run: git config --global core.autocrlf input
+
+      - uses: actions/checkout@v2
+
+      - uses: cygwin/cygwin-install-action@master
+        with:
+          platform: ${{ matrix.PKGARCH }}
+          packages: cygport,git,lzip,python3
+
+      # some old x86 devel packages contain .la files, which can mess up builds
+      - name: Clean .la files
+        run: |
+          export PATH=/usr/bin:/usr/local/bin:$(cygpath ${SYSTEMROOT})/system32
+          wget -q https://gist.githubusercontent.com/jon-turney/0338af595313f598bfab15a0ac0df847/raw/bd0eeca6be899e7846aa988fbcf15e4e12f5f842/zp_libtool_cleanlafiles.sh -O /etc/postinstall/zp_libtool_cleanlafiles.sh
+          bash /etc/postinstall/zp_libtool_cleanlafiles.sh
+        shell: C:\cygwin\bin\bash.exe --noprofile --norc -o igncr -eo pipefail '{0}'
+        continue-on-error: true
+
+      - name: Build packages
+        run: |
+          export PATH=/usr/bin:/usr/local/bin:$(cygpath ${SYSTEMROOT})/system32
+          ./scallywag --inputs '${{ toJson(github.event.client_payload) }}'
+        shell: C:\cygwin\bin\bash.exe --noprofile --norc -o igncr -eo pipefail '{0}'
+
+      - name: Upload scallywag metadata
+        uses: actions/upload-artifact@v2
+        with:
+          name: 'metadata'
+          path: scallywag.json
+        if: ${{ always() }}
+
+      # upload builddir for possible investigation of problems
+      - name: Upload builddir archive
+        uses: actions/upload-artifact@v2
+        with:
+          name: '${{ matrix.NAME }} builddir'
+          path: builddir.tar.xz
+        if: ${{ !cancelled() }}
+
+      # on success, upload packages from staging
+      - name: Upload packages
+        uses: actions/upload-artifact@v2
+        with:
+          name: '${{ matrix.NAME }} packages'
+          path: staging
