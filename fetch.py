@@ -36,10 +36,14 @@ def fetch():
         for r in c:
             buildid = r[0]
             user = r[1]
-            for arch, jobid in zip(r[2].split(), r[3].split()):
+            for arch, art in zip(r[2].split(), r[3].split()):
                 with tempfile.NamedTemporaryFile(delete=False) as tmpfile:
                     # fetch artifact to a tempfile
-                    url = 'https://ci.appveyor.com/api/buildjobs/%s/artifacts/artifacts.zip' % (jobid)
+                    if art.startswith('http'):
+                        url = art
+                    else:
+                        url = 'https://ci.appveyor.com/api/buildjobs/%s/artifacts/artifacts.zip' % (art)
+
                     logging.info('fetching %s' % url)
                     with urllib.request.urlopen(url) as response:
                         shutil.copyfileobj(response, tmpfile)
