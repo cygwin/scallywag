@@ -77,9 +77,11 @@ if 'nobuild' in package.tokens:
     logging.info('not building due to nobuild')
     sys.exit(0)
 
+setup_exe = subprocess.check_output(['cygpath', os.environ['SETUP']]).strip()
+
 if package.kind == 'cygport':
     logging.info('installing build dependencies')
-    subprocess.check_call([os.path.join('/', os.environ['SETUP'].strip()),
+    subprocess.check_call([setup_exe,
                            '-q', '-n', '-O',
                            '-R', os.environ['CYGWIN_ROOT'],
                            '-s', os.environ['CYGWIN_MIRROR'],
@@ -89,7 +91,7 @@ if package.kind == 'cygport':
     # work-around setup's limited handling of obsolete packages by running it
     # again to upgrade any obsolete packages which just got installed
     logging.info('updating build dependencies')
-    subprocess.check_call([os.path.join('/', os.environ['SETUP'].strip()),
+    subprocess.check_call([setup_exe,
                            '-q', '-n', '-O', '-g',
                            '-R', os.environ['CYGWIN_ROOT'],
                            '-s', os.environ['CYGWIN_MIRROR'],
