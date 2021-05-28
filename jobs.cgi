@@ -105,7 +105,7 @@ def results(parse):
     sql = 'SELECT * FROM jobs %s' % where_clause + 'ORDER BY id DESC LIMIT ?,?'
     c = conn.execute(sql, where_params + ((page - 1) * rows_per_page, rows_per_page))
     for row in c:
-        (jobid, srcpkg, commit, username, status, logurl, start_ts, end_ts, arches, artifacts, ref) = row
+        (jobid, srcpkg, commit, username, status, logurl, start_ts, end_ts, arches, artifacts, ref) = row[:11]
         commiturl = 'https://cygwin.com/git-cygwin-packages/?p=git/cygwin-packages/%s.git;a=commitdiff;h=%s' % (srcpkg, commit)
         shorthash = commit[0:8]
 

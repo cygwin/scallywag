@@ -13,10 +13,12 @@ import urllib.error
 import urllib.request
 
 import carpetbag
+import gh_token
 
 account = subprocess.check_output(['git', 'config', 'appveyor.account']).strip().decode('ascii')
 token = subprocess.check_output(['git', 'config', 'appveyor.token']).strip().decode('ascii')
 slug = 'scallywag'
+
 
 def _appveyor_build_request(package, maintainer, commit, reference, default_tokens, buildnumber):
     data = {
@@ -52,6 +54,36 @@ def _appveyor_build_request(package, maintainer, commit, reference, default_toke
     return True
 
 
+def _github_workflow_trigger(package, maintainer, commit, reference, default_tokens, buildnumber):
+    data = {
+        "event_type": "(%s) %s" % (buildnumber, package),  # use this just because it appears as the run name in UI
+        "client_payload": {
+            "BUILDNUMBER": buildnumber,
+            "PACKAGE": package,
+            "MAINTAINER": maintainer,
+            "COMMIT": commit,
+            "REFERENCE": reference,
+            "DEFAULT_TOKENS": default_tokens,
+        }
+    }
+
+    req = urllib.request.Request('https://api.github.com/repos/cygwin/scallywag/dispatches')
+
+    req.add_header('Accept', 'application/vnd.github.v3+json')
+    req.add_header('Authorization', 'Bearer ' + gh_token.fetch_iat())
+
+    try:
+        response = urllib.request.urlopen(req, data=json.dumps(data).encode('utf-8'))
+    except urllib.error.URLError as e:
+        response = e
+
+    status = response.getcode()
+    if status != 204:
+        print('scallywag: GitHub REST API failed status %s' % (status))
+        return False
+
+    return True
+
 def post_receive(commit, reference):
     repo = os.environ['GL_REPO']  # set by gitolite
     maintainer = os.environ['CYGNAME']  # set for ssh-wrapper
@@ -78,18 +110,22 @@ def post_receive(commit, reference):
         buildnumber = cursor.lastrowid
         conn.commit()
 
+    status = _github_workflow_trigger(package, maintainer, commit, reference, default_tokens, buildnumber)
+
+    backend = 'appveyor'
     status = _appveyor_build_request(package, maintainer, commit, reference, default_tokens, buildnumber)
+
     if not status:
         return
 
-    print('scallywag: build {0} queued'.format(buildnumber))
+    print('scallywag: build {0} queued on {1}'.format(buildnumber, backend))
     print('scallywag: https://cygwin.com/cgi-bin2/jobs.cgi?id={0}'.format(buildnumber))
 
     # record job as pending
     now = time.time()
     with sqlite3.connect(carpetbag.dbfile) as conn:
-        conn.execute('UPDATE jobs SET status = ?, start_timestamp = ?, end_timestamp = ? WHERE id = ?',
-                     ('pending', now, now, buildnumber))
+        conn.execute('UPDATE jobs SET status = ?, start_timestamp = ?, end_timestamp = ?, backend = ? WHERE id = ?',
+                     ('pending', now, now, backend, buildnumber))
         conn.commit()
 
 
