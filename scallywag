@@ -18,6 +18,7 @@ logging.basicConfig(format=os.path.basename(sys.argv[0]) + ': %(message)s')
 name = os.environ['PACKAGE']
 logging.info('package is %s' % (name))
 
+buildnumber = os.environ['BUILDNUMBER']
 maintainer = os.environ['MAINTAINER']
 commit = os.environ['COMMIT']
 reference = os.environ['REFERENCE']
@@ -61,11 +62,18 @@ elif package.arches:
     if arch not in package.arches:
         arch = 'skip'
 
-# record package details using build worker API (so they appear in build notification)
-data = {
-    "message": 'PACKAGE: %s; COMMIT: %s; ARCH: %s; MAINTAINER: %s; REFERENCE: %s; TOKENS: %s' % (name, commit, arch, maintainer, reference, ' '.join(package.tokens)),
+data_items = {
+    'BUILDNUMBER': buildnumber,
+    'PACKAGE': name,
+    'COMMIT': commit,
+    'ARCH': arch,
+    'MAINTAINER': maintainer,
+    'REFERENCE': reference,
+    'TOKENS': (' '.join(package.tokens)),
 }
 
+# record package details using build worker API (so they appear in build notification)
+data = {"message": '; '.join('%s: %s' % (k, v) for k, v in data_items.items())}
 req = urllib.request.Request(os.environ['APPVEYOR_API_URL'] + 'api/build/messages')
 req.add_header('Content-Type', 'application/json')
 response = urllib.request.urlopen(req, json.dumps(data).encode('utf-8'))

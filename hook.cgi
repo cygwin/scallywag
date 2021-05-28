@@ -57,7 +57,6 @@ def hook():
     with open(os.path.join(basedir, 'last.json'), 'w') as f:
         print(json.dumps(j, sort_keys=True, indent=4), file=f)
 
-    buildnumber = j['eventData']['buildNumber']
     buildurl = j['eventData']['buildUrl']
     passed = j['eventData']['passed']
     started = parse_time(j['eventData']['started'])
@@ -74,6 +73,7 @@ def hook():
                 continue
 
             evars = {i[0]: i[1] for i in map(lambda m: m.split(': ', 1), message.split('; '))}
+            buildnumber = evars['BUILDNUMBER']
             package = evars['PACKAGE']
             commit = evars['COMMIT']
             reference = evars['REFERENCE']

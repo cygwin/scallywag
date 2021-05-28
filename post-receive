@@ -8,6 +8,7 @@ import os
 import sqlite3
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -17,30 +18,13 @@ account = subprocess.check_output(['git', 'config', 'appveyor.account']).strip()
 token = subprocess.check_output(['git', 'config', 'appveyor.token']).strip().decode('ascii')
 slug = 'scallywag'
 
-
-def post_receive(commit, reference):
-    repo = os.environ['GL_REPO']  # set by gitolite
-    maintainer = os.environ['CYGNAME']  # set for ssh-wrapper
-
-    default_tokens = ''
-    try:
-        with open(os.path.join('/sourceware/cygwin-staging/home', maintainer, '!scallywag')) as f:
-            default_tokens = ''.join([l.strip() for l in f.readlines()])
-    except FileNotFoundError:
-        pass
-
-    if 'disable' in default_tokens:
-        print('scallywag: disabled by you')
-        return
-
-    _, package = os.path.split(repo)
-    if package.endswith('.git'):
-        package, _ = os.path.splitext(package)
+def _appveyor_build_request(package, maintainer, commit, reference, default_tokens, buildnumber):
     data = {
         "accountName": account,
         "projectSlug": slug,
         "branch": "master",
         "environmentVariables": {
+            "BUILDNUMBER": buildnumber,
             "PACKAGE": package,
             "MAINTAINER": maintainer,
             "COMMIT": commit,
@@ -62,18 +46,49 @@ def post_receive(commit, reference):
 
     status = response.getcode()
     if status != 200:
-        print('scallywag: webhook failed status %s' % (status))
+        print('scallywag: AppVeyor REST API failed status %s' % (status))
+        return False
+
+    return True
+
+
+def post_receive(commit, reference):
+    repo = os.environ['GL_REPO']  # set by gitolite
+    maintainer = os.environ['CYGNAME']  # set for ssh-wrapper
+
+    default_tokens = ''
+    try:
+        with open(os.path.join('/sourceware/cygwin-staging/home', maintainer, '!scallywag')) as f:
+            default_tokens = ''.join([l.strip() for l in f.readlines()])
+    except FileNotFoundError:
+        pass
+
+    if 'disable' in default_tokens:
+        print('scallywag: disabled by you')
         return
 
-    j = json.loads(response.read().decode('utf-8'))
-    buildnumber = j['buildNumber']
+    _, package = os.path.split(repo)
+    if package.endswith('.git'):
+        package, _ = os.path.splitext(package)
+
+    # record job as requested and generate buildnumber
+    with sqlite3.connect(carpetbag.dbfile) as conn:
+        cursor = conn.execute('INSERT INTO jobs (srcpkg, hash, ref, user, status) VALUES (?, ?, ?, ?, ?)',
+                     (package, commit, reference, maintainer, 'requested'))
+        buildnumber = cursor.lastrowid
+        conn.commit()
+
+    status = _appveyor_build_request(package, maintainer, commit, reference, default_tokens, buildnumber)
+    if not status:
+        return
+
     print('scallywag: build {0} queued'.format(buildnumber))
     print('scallywag: https://cygwin.com/cgi-bin2/jobs.cgi?id={0}'.format(buildnumber))
 
     # record job as pending
     with sqlite3.connect(carpetbag.dbfile) as conn:
-        conn.execute('INSERT INTO jobs (id, srcpkg, hash, ref, user, status) VALUES (?, ?, ?, ?, ?, ?)',
-                     (buildnumber, package, commit, reference, maintainer, 'pending'))
+        conn.execute('UPDATE jobs SET status = ?, start_timestamp = ?, end_timestamp = ? WHERE id = ?',
+                     ('pending', time.time(), time.time(), buildnumber))
         conn.commit()
 
 
