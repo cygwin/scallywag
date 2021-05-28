@@ -2,10 +2,8 @@
 
 import cgitb
 import json
-import logging
 import os
 import re
-import sqlite3
 import subprocess
 import sys
 import time
@@ -22,16 +20,6 @@ def parse_time(s):
     st = time.strptime(s, time_format)
     t = time.mktime(st)
     return int(t)
-
-
-def deploy(maintainer, tokens):
-    if ('nobuild' in tokens) or ('nodeploy' in tokens):
-        return False
-
-    if 'deploy' in tokens:
-        return True
-
-    return False
 
 
 def hook():
@@ -62,7 +50,6 @@ def hook():
     started = parse_time(j['eventData']['started'])
     finished = parse_time(j['eventData']['finished'])
     artifacts = {}
-    arches = []
 
     for job in j['eventData']['jobs']:
         messages = job['messages']
@@ -82,41 +69,30 @@ def hook():
             tokens = evars['TOKENS']
 
             if arch != 'skip':
-                arches.append(arch)
                 if len(job['artifacts']):
                     artifacts[arch] = job['id']
 
             break
 
-    arch_list = ' '.join(sorted(arches))
-    logging.info('buildno: %d, passed %s, package: %s, commit: %s, arches: %s' % (buildnumber, passed, package, commit, arch_list))
+    u = carpetbag.Update()
+    u.buildurl = buildurl
+    u.started = started
+    u.finished = finished
+    u.passed = passed
+    u.buildnumber = buildnumber
+    u.package = package
+    u.commit = commit
+    u.reference = reference
+    u.maintainer = maintainer
+    u.tokens = tokens
+    u.artifacts = artifacts
 
-    with sqlite3.connect(carpetbag.dbfile) as conn:
-        cursor = conn.execute('SELECT id FROM jobs WHERE id = ?', (buildnumber,))
-        if not cursor.fetchone():
-            conn.execute('INSERT INTO jobs (id, srcpkg, hash, ref, user) VALUES (?, ?, ?, ?, ?)',
-                         (buildnumber, package, commit, reference, maintainer))
-        conn.execute('UPDATE jobs SET status = ?, logurl = ?, start_timestamp = ?, end_timestamp = ?, arches = ? WHERE id = ?',
-                     ('succeeded' if passed else 'failed', buildurl, started, finished, arch_list, buildnumber))
-
-        # Doing the fetch and deploy under the 'apache' user is not a good idea.
-        # Instead we mark the build as ready to fetch, which a separate process
-        # does.
-        if (reference == 'refs/heads/master') and (package != 'playground') and deploy(maintainer, tokens):
-            if passed:
-                conn.execute("UPDATE jobs SET status = 'fetching', artifacts = ? WHERE id = ?", (' '.join([artifacts[a] for a in sorted(arches)]), buildnumber))
-
-        if 'nobuild' in tokens:
-            conn.execute("UPDATE jobs SET status = 'not built' WHERE id = ?", (buildnumber,))
+    carpetbag.update(u)
 
     return '200 OK', ''
 
 
 if __name__ == '__main__':
-    with sqlite3.connect(carpetbag.dbfile) as conn:
-        conn.execute('''CREATE TABLE IF NOT EXISTS jobs
-                     (id integer primary key, srcpkg text, hash text, user text, status text, logurl text, start_timestamp integer, end_timestamp integer, arches text, artifacts text, ref text)''')
-
     cgitb.enable()
     try:
         status, content = hook()
