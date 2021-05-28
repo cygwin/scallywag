@@ -110,10 +110,12 @@ def post_receive(commit, reference):
         buildnumber = cursor.lastrowid
         conn.commit()
 
-    status = _github_workflow_trigger(package, maintainer, commit, reference, default_tokens, buildnumber)
-
-    backend = 'appveyor'
-    status = _appveyor_build_request(package, maintainer, commit, reference, default_tokens, buildnumber)
+    if 'appveyor' in default_tokens:
+        backend = 'appveyor'
+        status = _appveyor_build_request(package, maintainer, commit, reference, default_tokens, buildnumber)
+    else:
+        backend = 'github'
+        status = _github_workflow_trigger(package, maintainer, commit, reference, default_tokens, buildnumber)
 
     if not status:
         return
