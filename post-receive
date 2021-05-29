@@ -86,9 +86,10 @@ def post_receive(commit, reference):
     print('scallywag: https://cygwin.com/cgi-bin2/jobs.cgi?id={0}'.format(buildnumber))
 
     # record job as pending
+    now = time.time()
     with sqlite3.connect(carpetbag.dbfile) as conn:
         conn.execute('UPDATE jobs SET status = ?, start_timestamp = ?, end_timestamp = ? WHERE id = ?',
-                     ('pending', time.time(), time.time(), buildnumber))
+                     ('pending', now, now, buildnumber))
         conn.commit()
 
 

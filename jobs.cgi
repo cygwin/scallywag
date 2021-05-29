@@ -143,7 +143,7 @@ def results(parse):
             result += '<td></td>'
 
         if end_ts and start_ts:
-            elapsed = end_ts - start_ts
+            elapsed = int(end_ts - start_ts)
             start = datetime.datetime.fromtimestamp(start_ts).strftime('%Y-%m-%d %H:%M:%S')
             result += textwrap.dedent('''<td>%s</td>
                                          <td>%s</td>''') % (start, elapsed)
