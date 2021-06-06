@@ -25,17 +25,19 @@ except ImportError:
     has_inotify = False
 
 import carpetbag
+import gh_token
 
 
 def fetch():
     with sqlite3.connect(carpetbag.dbfile) as conn:
         scan = False
-        c = conn.execute("SELECT id, user, arches, artifacts FROM jobs WHERE status = 'fetching'")
+        c = conn.execute("SELECT id, user, arches, artifacts, backend FROM jobs WHERE status = 'fetching'")
         if c.rowcount > 0:
             logging.info('fetched %d rows' % c.rowcount)
         for r in c:
             buildid = r[0]
             user = r[1]
+            backend = r[4]
             for arch, art in zip(r[2].split(), r[3].split()):
                 with tempfile.NamedTemporaryFile(delete=False) as tmpfile:
                     # fetch artifact to a tempfile
@@ -44,8 +46,13 @@ def fetch():
                     else:
                         url = 'https://ci.appveyor.com/api/buildjobs/%s/artifacts/artifacts.zip' % (art)
 
+                    req = urllib.request.Request(url)
+
+                    if backend == 'github':
+                        req.add_header('Authorization', 'Bearer ' + gh_token.fetch_iat())
+
                     logging.info('fetching %s' % url)
-                    with urllib.request.urlopen(url) as response:
+                    with urllib.request.urlopen(req) as response:
                         shutil.copyfileobj(response, tmpfile)
                 # close tmpfile
 
