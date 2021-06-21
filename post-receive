@@ -95,6 +95,10 @@ def post_receive(commit, reference):
     except FileNotFoundError:
         pass
 
+    for i in range(0, int(os.environ.get('GIT_PUSH_OPTION_COUNT', '0'))):
+        print('%s: %s' % ('GIT_PUSH_OPTION_%s' % i, os.environ['GIT_PUSH_OPTION_%s' % i]))
+        default_tokens += ' ' + os.environ['GIT_PUSH_OPTION_%s' % i].strip()
+
     if 'disable' in default_tokens:
         print('scallywag: disabled by you')
         return
