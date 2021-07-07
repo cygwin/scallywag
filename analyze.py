@@ -196,53 +196,23 @@ def depends_from_cygport(content):
 
 
 #
-# transform a cygport DEPEND atom list into a list of cygwin packages
+# transform a cygport BUILD_REQUIRES (or deprecated DEPEND) list into a list of
+# cygwin packages
 #
-# (XXX: DEPEND is now deprecated, in preference to BUILD_REQUIRES, which can
-# only contain cygwin package names, and hence doesn't require the complexity of
-# handling dependency atoms, so this can be removed when we stop supporting
-# DEPEND)
+# (BUILD_REQUIRES can only contain cygwin package names, and hence doesn't
+# require the complexity of handling DEPEND dependency atoms)
 #
-
-pkgconfig_map = eval(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pkgconfig-map')).read())
-
 
 def depends_from_depend(depend):
     build_deps = set()
 
     for atom in depend.split():
-        # atoms of the form blah(foo) indicate a module foo of type blah
+        # atoms of the form blah(foo) are the obsolete DEPEND syntax for
+        # indicating a module foo of type blah.  warn about them for now, to
+        # become an error in the future.
         match = re.match(r'(.*)\((.*)\)', atom)
         if match:
-            deptype = match.group(1)
-            module = match.group(2)
-            if deptype == 'girepository':
-                # transform into a cygwin package name
-                dep = deptype + '-' + module
-                build_deps.add(dep)
-            elif deptype == 'perl':
-                # transform perl module name into a cygwin package name
-                dep = deptype + '-' + module.replace('::', '-')
-                build_deps.add(dep)
-            elif deptype == 'pkgconfig':
-                # a dependency on the package which contains module.pc
-                module = module + '.pc'
-                if module in pkgconfig_map:
-                    dep = pkgconfig_map[module]
-                    logging.debug('mapping %s -> %s' % (module, ','.join(sorted(dep))))
-                    build_deps.update(dep)
-                else:
-                    logging.warning('could not map pkgconfig %s to a package' % (module))
-                # also implies a dependency on pkg-config
-                build_deps.add('pkg-config')
-            elif deptype == 'python':
-                # transform python2 module name into a cygwin package name
-                dep = 'python2-' + module
-            elif deptype == 'python3':
-                # transform python3 module name into a cygwin package name
-                dep = deptype + '-' + module
-            else:
-                logging.warning('DEPEND atom of unhandled type %s, module %s' % (deptype, module))
+            logging.warning('unhandled DEPEND atom %s' % (atom))
         # otherwise, it is simply a cygwin package name
         else:
             build_deps.add(atom)
