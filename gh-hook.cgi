@@ -42,7 +42,9 @@ def examine_run_artifacts(wfr_id, u):
 
     status = response.getcode()
     if status != 200:
-        return
+        raise Exception(str(status))
+
+    found_metadata = False
 
     j = json.loads(response.read().decode('utf-8'))
 
@@ -75,6 +77,8 @@ def examine_run_artifacts(wfr_id, u):
             # remove tmpfile
             os.remove(tmpfile.name)
 
+            found_metadata = True
+
             continue
 
         # note package collection artifacts
@@ -82,6 +86,12 @@ def examine_run_artifacts(wfr_id, u):
             arch = a['name'][:-len('packages')].strip()
             arch = arch.replace('i686', 'x86')
             u.artifacts[arch] = a['archive_download_url']
+
+    # if we didn't find the metadata file in the workflow artifacts, that
+    # suggests something went wrong in the build before scallywag could write
+    # it...
+    if not found_metadata:
+        u.status = 'errored'
 
 
 def process(data):
