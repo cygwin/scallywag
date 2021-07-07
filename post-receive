@@ -49,12 +49,46 @@ def _appveyor_build_request(package, maintainer, commit, reference, default_toke
     status = response.getcode()
     if status != 200:
         print('scallywag: AppVeyor REST API failed status %s' % (status))
-        return False
+        return -1
 
-    return True
+    j = json.loads(response.read().decode('utf-8'))
+    return j['buildId']
+
+
+def _github_most_recent_wfr_id():
+    data = {
+        "event": "repository_dispatch",
+        "per_page": 1
+        }
+
+    qs = urllib.parse.urlencode(data)
+
+    req = urllib.request.Request('https://api.github.com/repos/cygwin/scallywag/actions/runs' + '?' + qs)
+    req.add_header('Accept', 'application/vnd.github.v3+json')
+    req.add_header('Authorization', 'Bearer ' + gh_token.fetch_iat())
+
+    try:
+        response = urllib.request.urlopen(req)
+    except urllib.error.URLError as e:
+        response = e
+
+    status = response.getcode()
+    if status != 200:
+        print('scallywag: GitHub REST API failed status %s' % (status))
+        return 0
+
+    j = json.loads(response.read().decode('utf-8'))
+
+    wfr = j['workflow_runs']
+    if len(wfr) <= 0:
+        return 0
+
+    return wfr[0]['id']
 
 
 def _github_workflow_trigger(package, maintainer, commit, reference, default_tokens, buildnumber):
+    prev_wrf_id = _github_most_recent_wfr_id()
+
     data = {
         "event_type": "(%s) %s" % (buildnumber, package),  # use this just because it appears as the run name in UI
         "client_payload": {
@@ -80,9 +114,31 @@ def _github_workflow_trigger(package, maintainer, commit, reference, default_tok
     status = response.getcode()
     if status != 204:
         print('scallywag: GitHub REST API failed status %s' % (status))
-        return False
+        return -1
 
-    return True
+    # response has no content, and doesn't give an id for the workflow that
+    # we've just requested. all we can do is poll the workflow runs list and
+    # guess that the most recent one is ours.
+    #
+    # (it seems that it takes a little while for the requested run to appear in
+    # the workflow run list, with status 'queued', and then some time later it
+    # changes to status 'in_progress'.)
+    #
+    # and since there may exist other runs with status 'in_progress', the only
+    # half-way reliable way to do this is to poll until a new wfr id appears...
+    #
+    # see https://github.community/t/repository-dispatch-response/17950
+
+    for i in range(1, 10):
+        wfr_id = _github_most_recent_wfr_id()
+
+        if wfr_id != prev_wrf_id:
+            return wfr_id
+
+        time.sleep(1)
+
+    return 0
+
 
 def post_receive(commit, reference):
     repo = os.environ['GL_REPO']  # set by gitolite
@@ -114,14 +170,15 @@ def post_receive(commit, reference):
         buildnumber = cursor.lastrowid
         conn.commit()
 
+    # request job
     if 'appveyor' in default_tokens:
         backend = 'appveyor'
-        status = _appveyor_build_request(package, maintainer, commit, reference, default_tokens, buildnumber)
+        bbid = _appveyor_build_request(package, maintainer, commit, reference, default_tokens, buildnumber)
     else:
         backend = 'github'
-        status = _github_workflow_trigger(package, maintainer, commit, reference, default_tokens, buildnumber)
+        bbid = _github_workflow_trigger(package, maintainer, commit, reference, default_tokens, buildnumber)
 
-    if not status:
+    if bbid < 0:
         return
 
     print('scallywag: build {0} queued on {1}'.format(buildnumber, backend))
@@ -130,8 +187,8 @@ def post_receive(commit, reference):
     # record job as pending
     now = time.time()
     with sqlite3.connect(carpetbag.dbfile) as conn:
-        conn.execute('UPDATE jobs SET status = ?, start_timestamp = ?, end_timestamp = ?, backend = ? WHERE id = ?',
-                     ('pending', now, now, backend, buildnumber))
+        conn.execute('UPDATE jobs SET status = ?, start_timestamp = ?, end_timestamp = ?, backend = ?, backend_id = ? WHERE id = ?',
+                     ('pending', now, now, backend, bbid, buildnumber))
         conn.commit()
 
 

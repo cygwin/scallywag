@@ -15,4 +15,7 @@ if __name__ == '__main__':
         if 'backend' not in cols:
             cursor.execute("ALTER TABLE jobs ADD COLUMN backend TEXT NOT NULL DEFAULT ''")
 
+        if 'backend_id' not in cols:
+            cursor.execute("ALTER TABLE jobs ADD COLUMN backend_id INTEGER")
+
         print(cols)
