@@ -78,7 +78,7 @@ def hook():
     u.buildurl = buildurl
     u.started = started
     u.finished = finished
-    u.passed = passed
+    u.status = 'succeeded' if passed else 'failed'
     u.buildnumber = buildnumber
     u.package = package
     u.commit = commit

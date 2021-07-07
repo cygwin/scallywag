@@ -31,8 +31,6 @@ def parse_iso8601_time(s):
 
 
 def examine_run_artifacts(wfr_id, u):
-    u.artifacts = {}
-
     # Retrieve list of workflow run artifacts
     req = urllib.request.Request('https://api.github.com/repos/cygwin/scallywag/actions/runs/{}/artifacts'.format(wfr_id))
     req.add_header('Accept', 'application/vnd.github.v3+json')
@@ -103,10 +101,16 @@ def process(data):
         return None
 
     u = carpetbag.Update()
+
     u.buildurl = wfr['html_url']
     u.started = parse_iso8601_time(wfr['created_at'])
     u.finished = parse_iso8601_time(wfr['updated_at'])
-    u.passed = (wfr['conclusion'] == 'success')
+    u.artifacts = {}
+
+    if wfr['conclusion'] == 'success':
+        u.status = 'succeeded'
+    else:
+        u.status = 'failed'
 
     # examine workflow artifacts for that workflow_run id
     examine_run_artifacts(wfr['id'], u)

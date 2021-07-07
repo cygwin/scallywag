@@ -34,15 +34,18 @@ def update(u):
         if not cursor.fetchone():
             conn.execute('INSERT INTO jobs (id, srcpkg, hash, ref, user) VALUES (?, ?, ?, ?, ?)',
                          (u.buildnumber, u.package, u.commit, u.reference, u.maintainer))
+
         conn.execute('UPDATE jobs SET status = ?, logurl = ?, start_timestamp = ?, end_timestamp = ?, arches = ? WHERE id = ?',
-                     ('succeeded' if u.passed else 'failed', u.buildurl, u.started, u.finished, u.arch_list, u.buildnumber))
+                     (u.status, u.buildurl, u.started, u.finished, u.arch_list, u.buildnumber))
+
+        if u.status != 'succeeded':
+            return
 
         # Doing the fetch and deploy under the 'apache' user is not a good idea.
         # Instead we mark the build as ready to fetch, which a separate process
         # does.
         if (u.reference == 'refs/heads/master') and (u.package != 'playground') and deploy(u.maintainer, u.tokens):
-            if u.passed:
-                conn.execute("UPDATE jobs SET status = 'fetching', artifacts = ? WHERE id = ?", (' '.join([u.artifacts[a] for a in sorted(u.artifacts.keys())]), u.buildnumber))
+            conn.execute("UPDATE jobs SET status = 'fetching', artifacts = ? WHERE id = ?", (' '.join([u.artifacts[a] for a in sorted(u.artifacts.keys())]), u.buildnumber))
 
         if 'nobuild' in u.tokens:
             conn.execute("UPDATE jobs SET status = 'not built' WHERE id = ?", (u.buildnumber,))
