@@ -75,19 +75,19 @@ def _github_most_recent_wfr_id():
     status = response.getcode()
     if status != 200:
         print('scallywag: GitHub REST API failed status %s' % (status))
-        return 0
+        return 0, None
 
     j = json.loads(response.read().decode('utf-8'))
 
     wfr = j['workflow_runs']
     if len(wfr) <= 0:
-        return 0
+        return 0, None
 
-    return wfr[0]['id']
+    return wfr[0]['id'], wfr[0]['html_url']
 
 
 def _github_workflow_trigger(package, maintainer, commit, reference, default_tokens, buildnumber):
-    prev_wrf_id = _github_most_recent_wfr_id()
+    prev_wrf_id, _ = _github_most_recent_wfr_id()
 
     data = {
         "event_type": "(%s) %s" % (buildnumber, package),  # use this just because it appears as the run name in UI
@@ -114,7 +114,7 @@ def _github_workflow_trigger(package, maintainer, commit, reference, default_tok
     status = response.getcode()
     if status != 204:
         print('scallywag: GitHub REST API failed status %s' % (status))
-        return -1
+        return -1, None
 
     # response has no content, and doesn't give an id for the workflow that
     # we've just requested. all we can do is poll the workflow runs list and
@@ -130,14 +130,14 @@ def _github_workflow_trigger(package, maintainer, commit, reference, default_tok
     # see https://github.community/t/repository-dispatch-response/17950
 
     for i in range(1, 10):
-        wfr_id = _github_most_recent_wfr_id()
+        wfr_id, buildurl = _github_most_recent_wfr_id()
 
         if wfr_id != prev_wrf_id:
-            return wfr_id
+            return wfr_id, buildurl
 
         time.sleep(1)
 
-    return 0
+    return 0, None
 
 
 def post_receive(commit, reference):
@@ -174,9 +174,10 @@ def post_receive(commit, reference):
     if 'appveyor' in default_tokens:
         backend = 'appveyor'
         bbid = _appveyor_build_request(package, maintainer, commit, reference, default_tokens, buildnumber)
+        buildurl = None
     else:
         backend = 'github'
-        bbid = _github_workflow_trigger(package, maintainer, commit, reference, default_tokens, buildnumber)
+        bbid, buildurl = _github_workflow_trigger(package, maintainer, commit, reference, default_tokens, buildnumber)
 
     if bbid < 0:
         return
@@ -187,8 +188,8 @@ def post_receive(commit, reference):
     # record job as pending
     now = time.time()
     with sqlite3.connect(carpetbag.dbfile) as conn:
-        conn.execute('UPDATE jobs SET status = ?, start_timestamp = ?, end_timestamp = ?, backend = ?, backend_id = ? WHERE id = ?',
-                     ('pending', now, now, backend, bbid, buildnumber))
+        conn.execute('UPDATE jobs SET status = ?, logurl = ?, start_timestamp = ?, end_timestamp = ?, backend = ?, backend_id = ? WHERE id = ?',
+                     ('pending', buildurl, now, now, backend, bbid, buildnumber))
         conn.commit()
 
 
