@@ -59,20 +59,33 @@ def examine_run_artifacts(wfr_id, u):
             req = urllib.request.Request(url)
             req.add_header('Authorization', 'Bearer ' + gh_token.fetch_iat())
 
-            with urllib.request.urlopen(req) as response:
-                # fetch to a temporary file as zipfile needs to seek
-                with tempfile.NamedTemporaryFile(delete=False) as tmpfile:
-                    shutil.copyfileobj(response, tmpfile)
+            # occasionally, the metadata file is 404, despite appearing in the
+            # list of artifacts. it seems we need to wait a little while after
+            # the run has completed before that URL becomes valid.
+            for i in range(1, 30):
+                try:
+                    response = urllib.request.urlopen(req)
+                    break
+                except urllib.error.URLError:
+                    pass
 
-                with zipfile.ZipFile(tmpfile.name) as z:
-                    with z.open('scallywag.json') as m:
-                        mj = json.load(m)
-                        u.buildnumber = mj['BUILDNUMBER']
-                        u.package = mj['PACKAGE']
-                        u.commit = mj['COMMIT']
-                        u.reference = mj['REFERENCE']
-                        u.maintainer = mj['MAINTAINER']
-                        u.tokens = mj['TOKENS']
+                time.sleep(1)
+            else:
+                continue
+
+            # fetch to a temporary file as zipfile needs to seek
+            with tempfile.NamedTemporaryFile(delete=False) as tmpfile:
+                shutil.copyfileobj(response, tmpfile)
+
+            with zipfile.ZipFile(tmpfile.name) as z:
+                with z.open('scallywag.json') as m:
+                    mj = json.load(m)
+                    u.buildnumber = mj['BUILDNUMBER']
+                    u.package = mj['PACKAGE']
+                    u.commit = mj['COMMIT']
+                    u.reference = mj['REFERENCE']
+                    u.maintainer = mj['MAINTAINER']
+                    u.tokens = mj['TOKENS']
 
             # remove tmpfile
             os.remove(tmpfile.name)
