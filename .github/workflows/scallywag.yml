@@ -61,7 +61,7 @@ jobs:
         with:
           name: 'metadata'
           path: scallywag.json
-        if: ${{ always() }}
+        if: ${{ always() && matrix.NAME == 'noarch' }}
 
       # upload builddir for possible investigation of problems
       - name: Upload builddir archive
