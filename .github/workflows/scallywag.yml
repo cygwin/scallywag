@@ -68,7 +68,9 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: '${{ matrix.NAME }} builddir'
-          path: builddir.tar.xz
+          path: |
+            builddir.tar.xz
+            setup.log.full
         if: ${{ !cancelled() }}
 
       # on success, upload packages from staging

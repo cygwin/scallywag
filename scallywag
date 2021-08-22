@@ -107,20 +107,14 @@ setup_exe = subprocess.check_output(['cygpath', os.environ['SETUP']]).strip()
 if package.kind == 'cygport':
     logging.info('installing build dependencies')
     subprocess.check_call([setup_exe,
-                           '-q', '-n', '-O',
+                           '-q', '-n', '-O', '-g',
                            '-R', os.environ['CYGWIN_ROOT'],
                            '-s', os.environ['CYGWIN_MIRROR'],
                            '-l', os.environ['CACHE'],
                            '-P', ','.join(package.depends)])
 
-    # work-around setup's limited handling of obsolete packages by running it
-    # again to upgrade any obsolete packages which just got installed
-    logging.info('updating build dependencies')
-    subprocess.check_call([setup_exe,
-                           '-q', '-n', '-O', '-g',
-                           '-R', os.environ['CYGWIN_ROOT'],
-                           '-s', os.environ['CYGWIN_MIRROR'],
-                           '-l', os.environ['CACHE']])
+    # preserve setup.log.full
+    shutil.move('/var/log/setup.log.full', os.path.join(mydir, 'setup.log.full'))
 
     # fetch upstream sources
     #
