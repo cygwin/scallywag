@@ -32,7 +32,7 @@ import carpetbag
 
 dbfn = carpetbag.dbfile
 rows_per_page = 25
-conn = sqlite3.connect(dbfn)
+conn = sqlite3.connect('file:%s?mode=ro' % dbfn, uri=True)
 
 
 def results(parse):
