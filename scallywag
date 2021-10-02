@@ -51,6 +51,11 @@ try:
     subprocess.check_call(['git', 'remote', 'add', 'origin', 'git://cygwin.com/git/cygwin-packages/%s.git' % (name)])
     subprocess.check_call(['git', 'fetch', '--depth=1', 'origin', commit])
     subprocess.check_call(['git', 'checkout', '-B', 'master', 'FETCH_HEAD'])
+    subprocess.check_call(['git', 'submodule', 'update', '--init', '--recursive'])
+    # Using '--depth=1' with a submodule will fail if the remote doesn't have
+    # allowReachableSHA1InWant set.  If it does, the submodule should be
+    # configured as shallow in .gitmodules, so '--recommend-shallow' turns that
+    # on.
 except (subprocess.CalledProcessError, FileNotFoundError):
     logging.info('something went wrong cloning the package repo')
     sys.exit(1)
