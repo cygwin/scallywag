@@ -111,8 +111,13 @@ setup_exe = subprocess.check_output(['cygpath', os.environ['SETUP']]).strip()
 
 if package.kind == 'cygport':
     logging.info('installing build dependencies')
+
+    setup_opts = []
+    if 'testpackages' in package.tokens:
+        setup_opts.append('-t')
+
     subprocess.check_call([setup_exe,
-                           '-q', '-n', '-O', '-g',
+                           '-q', '-n', '-O', '-g'] + setup_opts + [
                            '-R', os.environ['CYGWIN_ROOT'],
                            '-s', os.environ['CYGWIN_MIRROR'],
                            '-l', os.environ['CACHE'],
