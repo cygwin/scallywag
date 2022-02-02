@@ -44,7 +44,7 @@ def results(parse):
                              <html lang="en">
                              <head>
                              <meta http-equiv="refresh" content="300">
-                             <link rel="stylesheet" type="text/css" href="/static/builds/style.css" />
+                             <link rel="stylesheet" type="text/css" href="/style.css" />
                              <title>Cygwin package builds</title>
                              </head>
                              <body>
