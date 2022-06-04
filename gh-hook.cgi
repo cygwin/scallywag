@@ -126,8 +126,7 @@ def process(data):
     u = carpetbag.Update()
 
     u.buildurl = wfr['html_url']
-    u.started = parse_iso8601_time(wfr['created_at'])
-    u.finished = parse_iso8601_time(wfr['updated_at'])
+    u.duration = parse_iso8601_time(wfr['updated_at']) - parse_iso8601_time(wfr['created_at'])
     u.artifacts = {}
 
     if wfr['conclusion'] == 'success':
@@ -163,6 +162,7 @@ def hook():
         carpetbag.update(u)
 
     return '200 OK', ''
+
 
 def test():
     with open(os.path.join(basedir, 'last.json')) as f:

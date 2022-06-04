@@ -35,8 +35,8 @@ def update(u):
             conn.execute('INSERT INTO jobs (id, srcpkg, hash, ref, user) VALUES (?, ?, ?, ?, ?)',
                          (u.buildnumber, u.package, u.commit, u.reference, u.maintainer))
 
-        conn.execute('UPDATE jobs SET status = ?, logurl = ?, start_timestamp = ?, end_timestamp = ?, arches = ? WHERE id = ?',
-                     (u.status, u.buildurl, u.started, u.finished, u.arch_list, u.buildnumber))
+        conn.execute('UPDATE jobs SET status = ?, logurl = ?, duration = ?, arches = ? WHERE id = ?',
+                     (u.status, u.buildurl, u.duration, u.arch_list, u.buildnumber))
 
         if u.status != 'succeeded':
             return

@@ -188,8 +188,8 @@ def post_receive(commit, reference):
     # record job as pending
     now = time.time()
     with sqlite3.connect(carpetbag.dbfile) as conn:
-        conn.execute('UPDATE jobs SET status = ?, logurl = ?, start_timestamp = ?, end_timestamp = ?, backend = ?, backend_id = ? WHERE id = ?',
-                     ('pending', buildurl, now, now, backend, bbid, buildnumber))
+        conn.execute('UPDATE jobs SET status = ?, logurl = ?, timestamp = ?, backend = ?, backend_id = ? WHERE id = ?',
+                     ('pending', buildurl, now, backend, bbid, buildnumber))
         conn.commit()
 
 

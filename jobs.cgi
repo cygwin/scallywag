@@ -33,7 +33,7 @@ import carpetbag
 dbfn = carpetbag.dbfile
 rows_per_page = 25
 conn = sqlite3.connect('file:%s?mode=ro' % dbfn, uri=True)
-
+conn.row_factory = sqlite3.Row
 
 def results(parse):
     page = int(parse.get('page', 1))
@@ -58,8 +58,8 @@ def results(parse):
                                  <th>ref</th>
                                  <th>logs</th>
                                  <th>arch</th>
-                                 <th>start</th>
-                                 <th>elapsed</th></tr>''')
+                                 <th>when</th>
+                                 <th>duration</th></tr>''')
 
     def options_list(column):
         selected = parse.get(column, '')
@@ -105,7 +105,18 @@ def results(parse):
     sql = 'SELECT * FROM jobs %s' % where_clause + 'ORDER BY id DESC LIMIT ?,?'
     c = conn.execute(sql, where_params + ((page - 1) * rows_per_page, rows_per_page))
     for row in c:
-        (jobid, srcpkg, commit, username, status, logurl, start_ts, end_ts, arches, artifacts, ref) = row[:11]
+        jobid = row['id']
+        srcpkg = row['srcpkg']
+        commit = row['hash']
+        username = row['user']
+        status = row['status']
+        logurl = row['logurl']
+        timestamp = row['timestamp']
+        duration = row['duration']
+        arches = row['arches']
+        artifacts = row['artifacts']
+        ref = row['ref']
+
         commiturl = 'https://cygwin.com/git-cygwin-packages/?p=git/cygwin-packages/%s.git;a=commitdiff;h=%s' % (srcpkg, commit)
         shorthash = commit[0:8]
 
@@ -142,14 +153,15 @@ def results(parse):
         else:
             result += '<td></td>'
 
-        if end_ts and start_ts:
-            elapsed = int(end_ts - start_ts)
-            start = datetime.datetime.fromtimestamp(start_ts).strftime('%Y-%m-%d %H:%M:%S')
-            result += textwrap.dedent('''<td>%s</td>
-                                         <td>%s</td>''') % (start, elapsed)
+        if timestamp:
+            result += '<td>%s</td>' % (datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S'))
         else:
-            result += textwrap.dedent('''<td></td>
-                                         <td></td>''')
+            result += '<td></td>'
+
+        if duration:
+            result += '<td>%s</td>' % (int(duration))
+        else:
+            result += '<td></td>'
 
         result += '</tr>'
 

@@ -18,4 +18,11 @@ if __name__ == '__main__':
         if 'backend_id' not in cols:
             cursor.execute("ALTER TABLE jobs ADD COLUMN backend_id INTEGER")
 
+        if 'duration' not in cols:
+            cursor.execute("ALTER TABLE jobs ADD COLUMN duration INTEGER")
+            cursor.execute("UPDATE jobs SET duration = end_timestamp - start_timestamp")
+            cursor.execute("ALTER TABLE jobs RENAME COLUMN start_timestamp TO timestamp")
+            # needs sqlite > 3.35.0
+            # cursor.execute("ALTER TABLE jobs DROP COLUMN end_timestamp")
+
         print(cols)
