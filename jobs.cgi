@@ -149,7 +149,7 @@ def results(parse):
             result += '<td></td>'
 
         if arches:
-            result += '<td>%s</td>' % (arches)
+            result += '<td>%s</td>' % (arches.replace('source ',''))
         else:
             result += '<td></td>'
 

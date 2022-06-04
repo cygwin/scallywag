@@ -56,6 +56,6 @@
 
 ## TODO
 
-- job to make a src pkg, pass that as an artifact to binary pkg jobs
+- pass src pkg as an artifact to binary pkg jobs rather than using checkout
 - authorized users should be able to cancel or retry a job, somehow
 - don't be terrible
