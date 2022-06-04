@@ -14,11 +14,19 @@ import urllib.request
 
 GH_APP_ID = 117451
 
-# load the GitHub app private key
-basedir = os.path.dirname(os.path.realpath(__file__))
-pemfile = os.path.join(basedir, 'scallywag.private-key.pem')
-cert = open(pemfile, 'r').read().encode()
-private_key = default_backend().load_pem_private_key(cert, None)
+private_key = None
+
+
+def _get_private_key():
+    global private_key
+    if not private_key:
+        # load the GitHub app private key
+        basedir = os.path.dirname(os.path.realpath(__file__))
+        pemfile = os.path.join(basedir, 'scallywag.private-key.pem')
+        cert = open(pemfile, 'r').read().encode()
+        private_key = default_backend().load_pem_private_key(cert, None)
+
+    return private_key
 
 
 def _make_jwt():
@@ -33,7 +41,7 @@ def _make_jwt():
         'iss': GH_APP_ID,
     }
 
-    return jwt.encode(payload, private_key, algorithm='RS256')
+    return jwt.encode(payload, _get_private_key(), algorithm='RS256')
 
 
 def fetch_iat():
