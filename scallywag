@@ -75,7 +75,7 @@ if ('noarch' in package.arches) and ('APPVEYOR' in os.environ):
         arch = 'skip'
 elif package.arches:
     # otherwise, build if it builds on this environment
-    if arch not in package.arches:
+    if arch not in package.arches + ['source']:
         arch = 'skip'
 
 data_items = {
@@ -126,18 +126,17 @@ if package.kind == 'cygport':
     # preserve setup.log.full
     shutil.move('/var/log/setup.log.full', os.path.join(mydir, 'setup.log.full'))
 
-    # fetch upstream sources
-    #
-    # (some cygclasses always check their prerequisites, so this must be after
-    # they are installed)
-    logging.info('fetching source')
-    subprocess.check_call(['cygport', package.script, 'download'])
-
-    # do the build
-    logging.info('building')
-    rc = subprocess.call([os.path.join(mydir, 'build.sh'), package.script,
-                          'notest' if 'notest' in package.tokens else ''],
-                         stdin=subprocess.DEVNULL)
+    # fetch upstream sources and do the build
+    subcommands = ['download']
+    if arch != 'source':
+        subcommands.append('all-test')
+        if 'notest' not in package.tokens:
+            subcommands.append('test')
+    else:
+        subcommands.append('srcpackage')
+    logging.info("running 'cygport %s'" % (' '.join(subcommands)))
+    rc = subprocess.call([os.path.join(mydir, 'build.sh'), package.script] +
+                         subcommands, stdin=subprocess.DEVNULL)
 
     # publish contents of dist as artifacts
     dist = glob.glob(os.path.join('*', 'dist'))

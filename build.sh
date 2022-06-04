@@ -1,19 +1,21 @@
 #!/bin/sh
 
 # SCRIPT names the build script to invoke
-SCRIPT=$1
-NOTEST=$2
+SCRIPT="$1"
+shift
+SUBCOMMANDS="$@"
 
 # installed packages may have added files to /etc/profile.d/, so re-read profile
 source /etc/profile
 # restore cwd after /etc/profile sets it to $HOME
 cd - >/dev/null
 
-# prep/compile/install/package (as test)
-cygport ${SCRIPT} all-test || exit 1
-
-# run the package's test suite
-if [ -z "$NOTEST" ]
-then
-   cygport ${SCRIPT} test || exit 1
-fi
+# run required cygport subcommands:
+#
+# 'download'; then 'srcpackage' (if we're making a source package); otherwise
+# 'all-test' (prep/compile/install/package-test), and then 'test' (unless notest
+# token is present)
+for s in ${SUBCOMMANDS}
+do
+    cygport ${SCRIPT} ${s} || exit 1
+done
