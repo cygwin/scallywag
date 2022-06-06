@@ -79,3 +79,7 @@ jobs:
         with:
           name: '${{ matrix.NAME }} packages'
           path: staging
+
+      # workaround problems with actions/checkout post-run step using cygwin git
+      - name: Avoid actions/checkout post-run step using Cygwin git
+        run: bash -c 'rm /usr/bin/git.exe'
