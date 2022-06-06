@@ -142,7 +142,11 @@ if package.kind == 'cygport':
     dist = glob.glob(os.path.join('*', 'dist'))
     if dist:
         logging.info('publishing artifacts')
-        shutil.move(dist[0], os.path.join(mydir, 'staging'))
+        stagingdir = os.path.join(mydir, 'staging')
+        shutil.move(dist[0], stagingdir)
+        for (dirpath, _, files) in os.walk(stagingdir):
+            for f in files:
+                logging.info(os.path.relpath(os.path.join(dirpath, f), mydir))
 
     # publish an archive with contents of builddir
     subprocess.check_call('tar -Jcf %s *' % (os.path.join(mydir, 'builddir.tar.xz')),
