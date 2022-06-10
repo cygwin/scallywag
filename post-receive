@@ -140,10 +140,7 @@ def _github_workflow_trigger(package, maintainer, commit, reference, default_tok
     return 0, None
 
 
-def post_receive(commit, reference):
-    repo = os.environ['GL_REPO']  # set by gitolite
-    maintainer = os.environ['CYGNAME']  # set for ssh-wrapper
-
+def request_build(commit, reference, package, maintainer, tokens=''):
     default_tokens = ''
     try:
         with open(os.path.join('/sourceware/cygwin-staging/home', maintainer, '!scallywag')) as f:
@@ -151,17 +148,12 @@ def post_receive(commit, reference):
     except FileNotFoundError:
         pass
 
-    for i in range(0, int(os.environ.get('GIT_PUSH_OPTION_COUNT', '0'))):
-        print('%s: %s' % ('GIT_PUSH_OPTION_%s' % i, os.environ['GIT_PUSH_OPTION_%s' % i]))
-        default_tokens += ' ' + os.environ['GIT_PUSH_OPTION_%s' % i].strip()
+    if tokens:
+        default_tokens = ' ' + tokens
 
     if 'disable' in default_tokens:
         print('scallywag: disabled by you')
         return
-
-    _, package = os.path.split(repo)
-    if package.endswith('.git'):
-        package, _ = os.path.splitext(package)
 
     # record job as requested and generate buildnumber
     with sqlite3.connect(carpetbag.dbfile) as conn:
@@ -179,6 +171,7 @@ def post_receive(commit, reference):
         backend = 'github'
         bbid, buildurl = _github_workflow_trigger(package, maintainer, commit, reference, default_tokens, buildnumber)
 
+    # an error occurred requesting the job
     if bbid < 0:
         return
 
@@ -194,8 +187,20 @@ def post_receive(commit, reference):
 
 
 if __name__ == '__main__':
+    repo = os.environ['GL_REPO']  # set by gitolite
+    maintainer = os.environ['CYGNAME']  # set for ssh-wrapper
+
+    tokens = ''
+    for i in range(0, int(os.environ.get('GIT_PUSH_OPTION_COUNT', '0'))):
+        print('%s: %s' % ('GIT_PUSH_OPTION_%s' % i, os.environ['GIT_PUSH_OPTION_%s' % i]))
+        tokens += ' ' + os.environ['GIT_PUSH_OPTION_%s' % i].strip()
+
+    _, package = os.path.split(repo)
+    if package.endswith('.git'):
+        package, _ = os.path.splitext(package)
+
     for line in sys.stdin.readlines():
         old, new, ref = line.strip().split()
         if ref.startswith('refs/heads/') and new != '0000000000000000000000000000000000000000':
             # only do something if a branch ref is updated
-            post_receive(new, ref)
+            request_build(new, ref, package, maintainer, tokens)
