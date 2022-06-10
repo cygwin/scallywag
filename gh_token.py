@@ -72,5 +72,20 @@ def fetch_iat():
     return j['token']
 
 
+def fetch_auth():
+    if os.environ['GITHUB_DEBUG_OWNER']:
+        owner = os.environ['GITHUB_DEBUG_OWNER']
+
+        basedir = os.path.dirname(os.path.realpath(__file__))
+        secretfile = os.path.join(basedir, 'github.token')
+        with open(secretfile, 'r') as f:
+            token = f.read().strip()
+    else:
+        owner = 'cygwin'
+        token = fetch_iat()
+
+    return (owner, token)
+
+
 if __name__ == '__main__':
-    print(fetch_iat())
+    print(fetch_auth())

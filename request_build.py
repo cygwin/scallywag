@@ -99,9 +99,10 @@ def _github_most_recent_wfr_id():
 
     qs = urllib.parse.urlencode(data)
 
-    req = urllib.request.Request('https://api.github.com/repos/cygwin/scallywag/actions/runs' + '?' + qs)
+    (owner, token) = gh_token.fetch_auth()
+    req = urllib.request.Request('https://api.github.com/repos/%s/scallywag/actions/runs?%s' % (owner, qs))
     req.add_header('Accept', 'application/vnd.github.v3+json')
-    req.add_header('Authorization', 'Bearer ' + gh_token.fetch_iat())
+    req.add_header('Authorization', 'Bearer ' + token)
 
     try:
         response = urllib.request.urlopen(req)
@@ -156,10 +157,11 @@ def _github_workflow_trigger(package, maintainer, commit, reference, default_tok
         }
     }
 
-    req = urllib.request.Request('https://api.github.com/repos/cygwin/scallywag/dispatches')
+    (owner, token) = gh_token.fetch_auth()
+    req = urllib.request.Request('https://api.github.com/repos/%s/scallywag/dispatches' % owner)
 
     req.add_header('Accept', 'application/vnd.github.v3+json')
-    req.add_header('Authorization', 'Bearer ' + gh_token.fetch_iat())
+    req.add_header('Authorization', 'Bearer ' + token)
 
     try:
         response = urllib.request.urlopen(req, data=json.dumps(data).encode('utf-8'))
@@ -253,10 +255,11 @@ def request_build(commit, reference, package, maintainer, tokens=''):
 
 
 def _github_workflow_cancel(wfr_id):
-    req = urllib.request.Request('https://api.github.com/repos/cygwin/scallywag/actions/runs/{}/cancel'.format(wfr_id), method='POST')
+    (owner, token) = gh_token.fetch_auth()
+    req = urllib.request.Request('https://api.github.com/repos/{}/scallywag/actions/runs/{}/cancel'.format(owner, wfr_id), method='POST')
 
     req.add_header('Accept', 'application/vnd.github.v3+json')
-    req.add_header('Authorization', 'Bearer ' + gh_token.fetch_iat())
+    req.add_header('Authorization', 'Bearer ' + token)
 
     try:
         response = urllib.request.urlopen(req)

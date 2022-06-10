@@ -14,7 +14,8 @@ import gh_token
 
 def examine_run_artifacts(wfr_id, u):
     # Retrieve list of workflow run artifacts
-    req = urllib.request.Request('https://api.github.com/repos/cygwin/scallywag/actions/runs/{}/artifacts'.format(wfr_id))
+    (owner, token) = gh_token.fetch_auth()
+    req = urllib.request.Request('https://api.github.com/repos/{}/scallywag/actions/runs/{}/artifacts'.format(owner, wfr_id))
     req.add_header('Accept', 'application/vnd.github.v3+json')
 
     try:
@@ -41,7 +42,7 @@ def examine_run_artifacts(wfr_id, u):
         if a['name'] == 'metadata':
             url = a['archive_download_url']
             req = urllib.request.Request(url)
-            req.add_unredirected_header('Authorization', 'Bearer ' + gh_token.fetch_iat())
+            req.add_unredirected_header('Authorization', 'Bearer ' + token)
 
             # occasionally, the metadata file is 404, despite appearing in the
             # list of artifacts. it seems we need to wait a little while after
