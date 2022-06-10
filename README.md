@@ -53,9 +53,3 @@
 
     Fetch the build artifacts, unpack them into CYGNAME's upload area on sourceware,
     and request upload processing by calm.
-
-## TODO
-
-- pass src pkg as an artifact to binary pkg jobs rather than using checkout
-- authorized users should be able to cancel or retry a job, somehow
-- don't be terrible
