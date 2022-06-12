@@ -129,7 +129,10 @@ if package.kind == 'cygport':
     # fetch upstream sources and do the build
     subcommands = ['download']
     if arch != 'source':
-        subcommands.append('all-test')
+        if 'label' in package.tokens:
+            subcommands.append('all-test')
+        else:
+            subcommands.append('all')
         if 'notest' not in package.tokens:
             subcommands.append('test')
     else:
