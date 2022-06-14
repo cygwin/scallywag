@@ -76,7 +76,7 @@ def hook():
 
     u = carpetbag.Update()
     u.buildurl = buildurl
-    u.duration = started - finished
+    u.duration = finished - started
     u.status = 'succeeded' if passed else 'failed'
     u.buildnumber = buildnumber
     u.package = package
