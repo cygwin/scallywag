@@ -59,8 +59,8 @@ def fetch():
                         shutil.copyfileobj(response, tmpfile)
                 # close tmpfile
 
-                # unpack to upload area
-                dest = '/sourceware/cygwin-staging/home/%s/%s/release' % (user, arch)
+                # unpack to staging area
+                dest = '/sourceware/cygwin-staging/staging/%s/%s/release' % (user, arch)
                 logging.info('unpacking to %s' % dest)
                 r = subprocess.run(['unzip', '-o', tmpfile.name, '-d', dest],
                                    stdout=subprocess.PIPE,
@@ -80,12 +80,12 @@ def fetch():
                 # update status to deployed
                 conn.execute("UPDATE jobs SET status = 'deployed' WHERE id = ?", (buildid,))
 
-        # signal calm to scan uploads
+        # signal calm to scan staging
         if scan:
             try:
                 pid = int(open('/sourceware/cygwin-staging/calm.pid').read())
                 try:
-                    logging.info('signalled calm to scan upload area')
+                    logging.info('signalled calm to scan staging area')
                     os.kill(pid, signal.SIGUSR1)
                 except ProcessLookupError:
                     pass
