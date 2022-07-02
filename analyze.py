@@ -95,7 +95,7 @@ def analyze(repodir, default_tokens):
         # some 'inherit's imply ARCH=noarch
         match = re.search(r'^\s*inherit\s*(cross|texlive)', content, re.MULTILINE)
         if match:
-            arches = 'noarch'
+            arches = ['noarch']
 
         if depend:
             logging.info('repository contains cygport %s, with BUILD_REQUIRES' % fn)
