@@ -162,7 +162,7 @@ def depends_from_cygport(content):
             (['kf5'], ['extra-cmake-modules']),
             (['lua'], ['lua', 'liblua-devel']),
             (['mate'], ['mate-common']),
-            (['meson'], ['meson']),
+            (['meson'], ['meson', 'pkg-config']),
             (['ninja'], ['ninja']),
             (['ocaml'], ['ocaml', 'flexdll']),
             (['perl'], ['perl']),
