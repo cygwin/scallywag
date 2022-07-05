@@ -61,6 +61,7 @@ def fetch():
 
                 # unpack to staging area
                 dest = '/sourceware/cygwin-staging/staging/%s/%s/release' % (user, arch)
+                os.makedirs(dest, exist_ok=True)
                 logging.info('unpacking to %s' % dest)
                 r = subprocess.run(['unzip', '-o', tmpfile.name, '-d', dest],
                                    stdout=subprocess.PIPE,
