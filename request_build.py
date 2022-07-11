@@ -154,6 +154,10 @@ def request_build(commit, reference, package, maintainer, tokens=''):
         print('scallywag: disabled by you')
         return
 
+    if 'nobuild' in default_tokens:
+        print('scallywag: not building due to nobuild')
+        return
+
     # record job as requested and generate buildnumber
     with sqlite3.connect(carpetbag.dbfile) as conn:
         cursor = conn.execute('INSERT INTO jobs (srcpkg, hash, ref, user, status) VALUES (?, ?, ?, ?, ?)',
