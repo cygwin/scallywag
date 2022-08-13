@@ -32,6 +32,7 @@ commit = args_dict['COMMIT']
 reference = args_dict['REFERENCE']
 default_tokens = args_dict.get('DEFAULT_TOKENS', '')
 
+logging.info('input args are %s' % (args_dict))
 logging.info('package is %s' % (name))
 
 # make a directory for working with the package repo
