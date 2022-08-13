@@ -148,7 +148,7 @@ def request_build(commit, reference, package, maintainer, tokens=''):
         pass
 
     if tokens:
-        default_tokens = ' ' + tokens
+        default_tokens = default_tokens + ' ' + tokens
 
     if 'disable' in default_tokens:
         print('scallywag: disabled by you')
