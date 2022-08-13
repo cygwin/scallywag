@@ -1,0 +1,5 @@
+[flake8]
+ignore=W504,E501,E741
+per-file-ignores =
+    gh_token.py:E402
+    fetch.py:B902

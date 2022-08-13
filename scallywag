@@ -117,8 +117,8 @@ if package.kind == 'cygport':
         setup_opts.append('-t')
 
     subprocess.check_call([setup_exe,
-                           '-q', '-n', '-O', '-g'] + setup_opts + [
-                           '-R', os.environ['CYGWIN_ROOT'],
+                           '-q', '-n', '-O', '-g'] + setup_opts +
+                          ['-R', os.environ['CYGWIN_ROOT'],
                            '-s', os.environ['CYGWIN_MIRROR'],
                            '-l', os.environ['CACHE'],
                            '-P', ','.join(package.depends)])
