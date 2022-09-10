@@ -85,9 +85,21 @@ def analyze(repodir, default_tokens):
         fn = cygports[0]
         logging.info('repository contains cygport %s' % fn)
 
+        # there's an ordering problem with some cygclasses, which always check
+        # for their prerequisites when included, irrespective of the cygport
+        # sub-command being used, so 'vars' will fail when we use it to
+        # determine what the prerequisites are...
+        #
+        # we should fix this somehow in cygport, but for the moment, we can work
+        # around this by setting the __cygport_check_prog_req_nonfatal env var.
+        env = os.environ.copy()
+        env['__cygport_check_prog_req_nonfatal'] = '1'
+
         # extract interesting variables from cygport
         output = subprocess.check_output(['cygport', fn, 'vars'] + var_list,
+                                         env=env,
                                          stderr=subprocess.DEVNULL).decode()
+
         # elide any information messages
         output = re.sub(r'^\x1b.*\*\*\* Info:.*\n', r'', output, flags=re.MULTILINE)
 
