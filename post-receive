@@ -3,13 +3,33 @@
 # post-receive hook to start a package build
 #
 
+import getpass
 import os
+import pwd
 import sys
 from request_build import request_build
 
 if __name__ == '__main__':
-    repo = os.environ['GL_REPO']  # set by gitolite
-    maintainer = os.environ['CYGNAME']  # set for ssh-wrapper
+    if 'GL_REPO' in os.environ:
+        # set by gitolite
+        repo = os.environ['GL_REPO']
+    else:
+        # otherwise, assume repository is the working directory
+        repo = os.getcwd()
+
+    if 'CYGNAME' in os.environ:
+        # if we're invoked by ssh-wrapper, CYGNAME will be set
+        maintainer = os.environ['CYGNAME']
+    else:
+        # otherwise, try to turn UID in a full name
+        gecos = pwd.getpwuid(os.getuid()).pw_gecos
+        maintainer = gecos.split(',', 1)[0]
+
+        # failing that, use login name
+        if not maintainer:
+            maintainer = getpass.getuser()
+
+    print('scallywag: invoked on repository {0}, by maintainer {1}'.format(repo, maintainer))
 
     tokens = ''
     for i in range(0, int(os.environ.get('GIT_PUSH_OPTION_COUNT', '0'))):
