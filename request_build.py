@@ -13,13 +13,14 @@ import urllib.request
 
 import carpetbag
 import gh_token
-
-account = subprocess.check_output(['git', 'config', 'appveyor.account']).strip().decode('ascii')
-token = subprocess.check_output(['git', 'config', 'appveyor.token']).strip().decode('ascii')
-slug = 'scallywag'
+import appveyor_token
 
 
 def _appveyor_build_request(package, maintainer, commit, reference, default_tokens, buildnumber):
+    slug = 'scallywag'
+
+    account, token = appveyor_token.fetch_token()
+
     data = {
         "accountName": account,
         "projectSlug": slug,
