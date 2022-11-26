@@ -87,7 +87,7 @@ def analyze(repodir, default_tokens):
             logging.info('cygport SCALLYWAG: %s' % tokens)
 
         # extract any ARCH line
-        arches = ['i686', 'x86_64']
+        arches = ['x86_64']
         match = re.search(r'^\s*ARCH=\s*"?(.*?)"?$', content, re.MULTILINE)
         if match:
             arches = match.group(1).split()
