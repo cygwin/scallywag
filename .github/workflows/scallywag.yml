@@ -12,14 +12,6 @@ jobs:
     with:
       name: source
 
-  i686:
-    needs: source
-
-    uses: ./.github/workflows/build.yml
-    with:
-      name: i686
-      pkgarch: x86
-
   x86_64:
     needs: source
 
