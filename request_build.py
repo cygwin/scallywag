@@ -5,8 +5,8 @@
 
 import json
 import os
+import re
 import sqlite3
-import subprocess
 import time
 import urllib.error
 import urllib.request
@@ -88,6 +88,10 @@ def _github_most_recent_wfr_id():
 
 def _github_workflow_trigger(package, maintainer, commit, reference, default_tokens, buildnumber):
     prev_wrf_id, _ = _github_most_recent_wfr_id()
+
+    # strip out any over-quoting in the token, as it's harmful to passing the
+    # client_payload into scallywag via the command line
+    default_tokens = re.sub(r'[\'"]', r'', default_tokens)
 
     data = {
         "event_type": "(%s) %s" % (buildnumber, package),  # use this just because it appears as the run name in UI
