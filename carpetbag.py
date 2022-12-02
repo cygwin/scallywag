@@ -24,28 +24,44 @@ def deploy(maintainer, tokens):
     return False
 
 
-def update(u):
-    # sort, because it's important that 'arch' and 'artifacts' are in the same order!
-    u.arch_list = ' '.join(sorted(u.artifacts.keys()))
+def update_status(u):
     logging.info(vars(u))
 
     with sqlite3.connect(dbfile) as conn:
-        cursor = conn.execute('SELECT id FROM jobs WHERE id = ?', (u.buildnumber,))
-        if not cursor.fetchone():
-            conn.execute('INSERT INTO jobs (id, srcpkg, hash, ref, user) VALUES (?, ?, ?, ?, ?)',
-                         (u.buildnumber, u.package, u.commit, u.reference, u.maintainer))
+        # if the id isn't available, determine it from backend_id
+        if not hasattr(u, 'buildnumber'):
+            cursor = conn.execute('SELECT id FROM jobs WHERE backend_id = ?', (u.backend_id,))
+            u.buildnumber = cursor.fetchone()[0]
 
-        conn.execute('UPDATE jobs SET status = ?, logurl = ?, duration = ?, arches = ? WHERE id = ?',
-                     (u.status, u.buildurl, u.duration, u.arch_list, u.buildnumber))
+        conn.execute('UPDATE jobs SET status = ?, logurl = ?, duration = ? WHERE id = ?',
+                     (u.status, u.buildurl, u.duration, u.buildnumber))
 
         if u.status != 'succeeded':
+            return
+
+        # The only piece of new data the metadata actually provides is the
+        # updated token set, after adding tokens from the cygport itself
+        if not hasattr(u, 'tokens'):
+            conn.execute("UPDATE jobs SET status = 'fetching metadata' WHERE id = ?", (u.buildnumber,))
+
+
+def update_metadata(u):
+    logging.info(vars(u))
+
+    with sqlite3.connect(dbfile) as conn:
+        if 'nobuild' in u.tokens:
+            conn.execute("UPDATE jobs SET status = 'not built' WHERE id = ?", (u.buildnumber,))
             return
 
         # Doing the fetch and deploy under the 'apache' user is not a good idea.
         # Instead we mark the build as ready to fetch, which a separate process
         # does.
         if (u.reference == 'refs/heads/master') and (u.package != 'playground') and deploy(u.maintainer, u.tokens):
-            conn.execute("UPDATE jobs SET status = 'fetching', artifacts = ? WHERE id = ?", (' '.join([u.artifacts[a] for a in sorted(u.artifacts.keys())]), u.buildnumber))
+            # sort, because it's important that 'arch' and 'artifacts' are in the same order!
+            u.arch_list = ' '.join(sorted(u.artifacts.keys()))
 
-        if 'nobuild' in u.tokens:
-            conn.execute("UPDATE jobs SET status = 'not built' WHERE id = ?", (u.buildnumber,))
+            conn.execute("UPDATE jobs SET status = 'fetching', arches = ?, artifacts = ? WHERE id = ?", (u.arch_list, ' '.join([u.artifacts[a] for a in sorted(u.artifacts.keys())]), u.buildnumber))
+        else:
+            if not hasattr(u, 'status'):
+                u.status = 'succeeded'
+            conn.execute("UPDATE jobs SET status = ? WHERE id = ?", (u.status, u.buildnumber))

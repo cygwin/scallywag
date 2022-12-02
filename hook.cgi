@@ -85,7 +85,8 @@ def hook():
     u.tokens = tokens
     u.artifacts = artifacts
 
-    carpetbag.update(u)
+    carpetbag.update_status(u)
+    carpetbag.update_metadata(u)
 
     return '200 OK', ''
 
