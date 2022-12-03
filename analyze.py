@@ -95,6 +95,10 @@ def analyze(repodir, default_tokens):
         env = os.environ.copy()
         env['__cygport_check_prog_req_nonfatal'] = '1'
 
+        # some cygports take this as a signal to not raise an error when the
+        # environment is not as expected
+        env['cygport_no_error'] = '1'
+
         # extract interesting variables from cygport
         try:
             result = subprocess.run(['cygport', fn, 'vars'] + var_list,
