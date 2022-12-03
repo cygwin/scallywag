@@ -96,9 +96,18 @@ def analyze(repodir, default_tokens):
         env['__cygport_check_prog_req_nonfatal'] = '1'
 
         # extract interesting variables from cygport
-        output = subprocess.check_output(['cygport', fn, 'vars'] + var_list,
-                                         env=env,
-                                         stderr=subprocess.DEVNULL).decode()
+        try:
+            result = subprocess.run(['cygport', fn, 'vars'] + var_list,
+                                    check=True,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE,
+                                    env=env)
+        except subprocess.CalledProcessError as e:
+            logging.error('cygport vars failed, exit status %d' % e.returncode)
+            logging.error(e.stderr)
+            return PackageKind()
+
+        output = result.stdout.decode()
 
         # elide any information messages
         output = re.sub(r'^\x1b.*\*\*\* Info:.*\n', r'', output, flags=re.MULTILINE)
