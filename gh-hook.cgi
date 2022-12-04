@@ -6,7 +6,6 @@ import hmac
 import json
 import os
 import shutil
-import subprocess
 import sys
 import tempfile
 import time
@@ -62,7 +61,7 @@ def examine_run_artifacts(wfr_id, u):
             # occasionally, the metadata file is 404, despite appearing in the
             # list of artifacts. it seems we need to wait a little while after
             # the run has completed before that URL becomes valid.
-            for i in range(1, 30):
+            for _i in range(1, 30):
                 try:
                     response = urllib.request.urlopen(req)
                     break
