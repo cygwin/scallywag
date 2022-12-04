@@ -130,6 +130,8 @@ def process(data):
 
     if wfr['conclusion'] == 'success':
         u.status = 'succeeded'
+    elif wfr['conclusion'] == 'cancelled':
+        u.status = 'cancelled'
     else:
         u.status = 'failed'
 
