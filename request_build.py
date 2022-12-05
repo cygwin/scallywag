@@ -3,6 +3,8 @@
 # start a package build via backend API
 #
 
+import contextlib
+import fcntl
 import json
 import os
 import re
@@ -14,6 +16,17 @@ import urllib.request
 import carpetbag
 import gh_token
 import appveyor_token
+
+
+@contextlib.contextmanager
+def locked():
+    lockfile = open('/tmp/scallywag.request_build.lock', 'w+')
+    fcntl.flock(lockfile.fileno(), fcntl.LOCK_EX)
+    try:
+        yield lockfile
+    finally:
+        fcntl.flock(lockfile.fileno(), fcntl.LOCK_UN)
+        lockfile.close()
 
 
 def _appveyor_build_request(package, maintainer, commit, reference, default_tokens, buildnumber):
@@ -180,7 +193,8 @@ def request_build(commit, reference, package, maintainer, tokens=''):
         buildurl = None
     else:
         backend = 'github'
-        bbid, buildurl = _github_workflow_trigger(package, maintainer, commit, reference, default_tokens, buildnumber)
+        with locked():
+            bbid, buildurl = _github_workflow_trigger(package, maintainer, commit, reference, default_tokens, buildnumber)
 
     # an error occurred requesting the job
     if bbid < 0:
