@@ -133,13 +133,16 @@ def _github_workflow_trigger(package, maintainer, commit, reference, default_tok
     #
     # see https://github.community/t/repository-dispatch-response/17950
 
-    for _i in range(1, 10):
+    for _i in range(1, 60):
         wfr_id, buildurl = _github_most_recent_wfr_id()
 
         if wfr_id != prev_wrf_id:
             return wfr_id, buildurl
 
         time.sleep(1)
+
+    print('scallywag: timeout waiting for GitHub to assign a wrf_id')
+    print('scallywag: PLEASE REPORT THIS!')
 
     return 0, None
 
