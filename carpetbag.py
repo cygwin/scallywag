@@ -53,14 +53,15 @@ def update_metadata(u):
             conn.execute("UPDATE jobs SET status = 'not built' WHERE id = ?", (u.buildnumber,))
             return
 
+        # sort, because it's important that 'arch' and 'artifacts' are in the same order!
+        u.arch_list = ' '.join(sorted(u.artifacts.keys()))
+        conn.execute("UPDATE jobs SET arches = ?, artifacts = ? WHERE id = ?", (u.arch_list, ' '.join([u.artifacts[a] for a in sorted(u.artifacts.keys())]), u.buildnumber))
+
         # Doing the fetch and deploy under the 'apache' user is not a good idea.
         # Instead we mark the build as ready to fetch, which a separate process
         # does.
         if (u.reference == 'refs/heads/master') and (u.package != 'playground') and deploy(u.maintainer, u.tokens):
-            # sort, because it's important that 'arch' and 'artifacts' are in the same order!
-            u.arch_list = ' '.join(sorted(u.artifacts.keys()))
-
-            conn.execute("UPDATE jobs SET status = 'fetching', arches = ?, artifacts = ? WHERE id = ?", (u.arch_list, ' '.join([u.artifacts[a] for a in sorted(u.artifacts.keys())]), u.buildnumber))
+            conn.execute("UPDATE jobs SET status = 'fetching' WHERE id = ?", (u.buildnumber,))
         else:
             if not hasattr(u, 'status'):
                 u.status = 'succeeded'
