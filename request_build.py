@@ -20,7 +20,9 @@ import appveyor_token
 
 @contextlib.contextmanager
 def locked():
+    old_umask = os.umask(0o000)
     lockfile = open('/tmp/scallywag.request_build.lock', 'w+')
+    os.umask(old_umask)
     fcntl.flock(lockfile.fileno(), fcntl.LOCK_EX)
     try:
         yield lockfile
