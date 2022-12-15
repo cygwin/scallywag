@@ -103,12 +103,12 @@ def analyze(repodir, default_tokens):
         try:
             result = subprocess.run(['cygport', fn, 'vars'] + var_list,
                                     check=True,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE,
+                                    capture_output=True,
                                     env=env)
         except subprocess.CalledProcessError as e:
             logging.error('cygport vars failed, exit status %d' % e.returncode)
-            logging.error(e.stderr)
+            logging.error(e.stderr.decode())
+            logging.error(e.stdout.decode())
             return PackageKind()
 
         output = result.stdout.decode()
