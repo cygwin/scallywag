@@ -112,6 +112,48 @@ def get_var(var, default=None):
     return var_values.get(var)
 
 
+def parse_cygport(fn):
+    logging.info('parsing cygport %s' % fn)
+
+    with open(fn) as f:
+        content = f.read()
+
+        # discard comments
+        content = re.sub(r'#.*$', '', content)
+
+        # fold any line-continuations
+        content = re.sub(r'\\\n', '', content)
+
+        # Does it have a line that sets or adds to the value of a variable of
+        # interest? (Note that this only approximates the value.  The only
+        # accurate way to evaluate it is to execute the cygport).
+        for var in var_list + ['ARCH']:
+            value = ''
+            matches = re.finditer(r'^\s*' + var + r'(?:\+|)=\s*"?(.*?)"?\s*$', content, re.MULTILINE | re.DOTALL)
+            for match in matches:
+                value += match.group(1) + ' '
+            if value:
+                var_values[var] = value
+
+        # Work out what ARCHES should have been
+        if 'ARCH' in var_values:
+            var_values['ARCHES'] = var_values.pop('ARCH')
+        else:
+            var_values['ARCHES'] = 'all'
+
+        # Also look for inherits lines, to work out what INHERITED should have
+        # been
+        inherits = ''
+        for l in content.splitlines():
+            match = re.match('^inherit(.*)', l)
+            if match:
+                inherits += match.group(1) + ' '
+        var_values['INHERITED'] = inherits
+
+        for var in var_values:
+            logging.info('%s="%s"' % (var, var_values[var]))
+
+
 #
 # analyze the source repository
 #
@@ -131,7 +173,8 @@ def analyze(repodir, default_tokens):
         logging.info('repository contains cygport %s' % fn)
 
         if not cygport_vars(fn):
-            return PackageKind()
+            # fallback to trying to parse the cygport (as previously)
+            parse_cygport(os.path.join(repodir, fn))
 
         # does it have a BUILD_REQUIRES or DEPEND line?
         depends = get_var('BUILD_REQUIRES', '') + ' ' + get_var('DEPEND', '')
