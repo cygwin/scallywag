@@ -55,6 +55,51 @@ var_list = [
 var_values = {}
 
 
+def cygport_vars(fn):
+    # there's an ordering problem with some cygclasses, which always check
+    # for their prerequisites when included, irrespective of the cygport
+    # sub-command being used, so 'vars' will fail when we use it to
+    # determine what the prerequisites are...
+    #
+    # we should fix this somehow in cygport, but for the moment, we can work
+    # around this by setting the __cygport_check_prog_req_nonfatal env var.
+    env = os.environ.copy()
+    env['__cygport_check_prog_req_nonfatal'] = '1'
+
+    # some cygports take this as a signal to not raise an error when the
+    # environment is not as expected
+    env['cygport_no_error'] = '1'
+
+    # extract interesting variables from cygport
+    try:
+        result = subprocess.run(['cygport', fn, 'vars'] + var_list,
+                                check=True,
+                                capture_output=True,
+                                env=env)
+    except subprocess.CalledProcessError as e:
+        logging.error('cygport vars failed, exit status %d' % e.returncode)
+        logging.error(e.stderr.decode())
+        logging.error(e.stdout.decode())
+        return False
+
+    output = result.stdout.decode()
+
+    # elide any information messages
+    output = re.sub(r'^\x1b.*\*\*\* Info:.*\n', r'', output, flags=re.MULTILINE)
+
+    for m in re.finditer(r'^(?:declare -[-r] |)(.*?)="(.*?)"$', output, re.MULTILINE | re.DOTALL):
+        # TBD: handle shell escapes in value?
+        var_values[m.group(1)] = m.group(2)
+        logging.info('%s="%s"' % (m.group(1), m.group(2)))
+
+    # workaround for a bug cygport
+    # (arch probing gets information messages from nested invocation into ARCH)
+    if '***' in get_var('ARCHES'):
+        var_values['ARCHES'] = 'all'
+
+    return True
+
+
 def get_var(var, default=None):
     if var not in var_list:
         logging.error('unanticipated variable %s' % var)
@@ -85,46 +130,8 @@ def analyze(repodir, default_tokens):
         fn = cygports[0]
         logging.info('repository contains cygport %s' % fn)
 
-        # there's an ordering problem with some cygclasses, which always check
-        # for their prerequisites when included, irrespective of the cygport
-        # sub-command being used, so 'vars' will fail when we use it to
-        # determine what the prerequisites are...
-        #
-        # we should fix this somehow in cygport, but for the moment, we can work
-        # around this by setting the __cygport_check_prog_req_nonfatal env var.
-        env = os.environ.copy()
-        env['__cygport_check_prog_req_nonfatal'] = '1'
-
-        # some cygports take this as a signal to not raise an error when the
-        # environment is not as expected
-        env['cygport_no_error'] = '1'
-
-        # extract interesting variables from cygport
-        try:
-            result = subprocess.run(['cygport', fn, 'vars'] + var_list,
-                                    check=True,
-                                    capture_output=True,
-                                    env=env)
-        except subprocess.CalledProcessError as e:
-            logging.error('cygport vars failed, exit status %d' % e.returncode)
-            logging.error(e.stderr.decode())
-            logging.error(e.stdout.decode())
+        if not cygport_vars(fn):
             return PackageKind()
-
-        output = result.stdout.decode()
-
-        # elide any information messages
-        output = re.sub(r'^\x1b.*\*\*\* Info:.*\n', r'', output, flags=re.MULTILINE)
-
-        for m in re.finditer(r'^(?:declare -[-r] |)(.*?)="(.*?)"$', output, re.MULTILINE | re.DOTALL):
-            # TBD: handle shell escapes in value?
-            var_values[m.group(1)] = m.group(2)
-            logging.info('%s="%s"' % (m.group(1), m.group(2)))
-
-        # workaround for a bug cygport
-        # (arch probing gets information messages from nested invocation into ARCH)
-        if '***' in get_var('ARCHES'):
-            var_values['ARCHES'] = 'all'
 
         # does it have a BUILD_REQUIRES or DEPEND line?
         depends = get_var('BUILD_REQUIRES', '') + ' ' + get_var('DEPEND', '')
