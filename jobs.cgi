@@ -35,6 +35,7 @@ rows_per_page = 25
 conn = sqlite3.connect('file:%s?mode=ro' % dbfn, uri=True)
 conn.row_factory = sqlite3.Row
 
+
 def results(parse):
     page = int(parse.get('page', 1))
     highlight = int(parse.get('id', 0))
@@ -66,9 +67,9 @@ def results(parse):
         sql = 'SELECT DISTINCT %s FROM jobs ORDER BY %s' % (column, column)
         c = conn.execute(sql)
         opts = [''] + [r[0] for r in c]
-        return ('<select name="%s" form="filter">' % (column)
-                + ''.join(['<option%s>%s</option>' % (' selected' if o == selected else '', o) for o in opts])
-                + '</select>')
+        return ('<select name="%s" form="filter">' % (column) +
+                ''.join(['<option%s>%s</option>' % (' selected' if o == selected else '', o) for o in opts]) +
+                '</select>')
 
     result += textwrap.dedent('''<tr><td><form id="filter" method="get"><button>Filter</button></form></td>
                                  <td>%s</td>
@@ -114,7 +115,7 @@ def results(parse):
         timestamp = row['timestamp']
         duration = row['duration']
         arches = row['arches']
-        artifacts = row['artifacts']
+        # artifacts = row['artifacts']
         ref = row['ref']
 
         commiturl = 'https://cygwin.com/git-cygwin-packages/?p=git/cygwin-packages/%s.git;a=commitdiff;h=%s' % (srcpkg, commit)
@@ -198,6 +199,6 @@ if __name__ == "__main__":
 
     # if any query variable appears more than once, use the value of the last
     # occurence.
-    parse = {k:v[-1] for k, v in parse.items()}
+    parse = {k: v[-1] for k, v in parse.items()}
 
     print(results(parse))
