@@ -94,6 +94,8 @@ def fetch():
             except FileNotFoundError:
                 pass
 
+    conn.close()
+
 
 def fetch_metadata():
     incomplete = False
@@ -126,6 +128,8 @@ def fetch_metadata():
                 # time after the wfr finished, that that suggests something went
                 # wrong in internally in scallywag, before it writes it, in
                 # which case we should change the status to errored
+
+    conn.close()
 
     return incomplete
 

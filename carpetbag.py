@@ -44,6 +44,8 @@ def update_status(u):
         if not hasattr(u, 'tokens'):
             conn.execute("UPDATE jobs SET status = 'fetching metadata' WHERE id = ?", (u.buildnumber,))
 
+    conn.close()
+
 
 def update_metadata(u):
     logging.info(vars(u))
@@ -66,3 +68,5 @@ def update_metadata(u):
             if not hasattr(u, 'status'):
                 u.status = 'succeeded'
             conn.execute("UPDATE jobs SET status = ? WHERE id = ?", (u.status, u.buildnumber))
+
+    conn.close()

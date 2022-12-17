@@ -187,6 +187,7 @@ def request_build(commit, reference, package, maintainer, tokens=''):
                               (package, commit, reference, maintainer, 'requested'))
         buildnumber = cursor.lastrowid
         conn.commit()
+    conn.close()
 
     # request job
     if 'appveyor' in default_tokens:
@@ -211,3 +212,4 @@ def request_build(commit, reference, package, maintainer, tokens=''):
         conn.execute('UPDATE jobs SET status = ?, logurl = ?, timestamp = ?, backend = ?, backend_id = ? WHERE id = ?',
                      ('pending', buildurl, now, backend, bbid, buildnumber))
         conn.commit()
+    conn.close()

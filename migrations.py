@@ -26,3 +26,5 @@ if __name__ == '__main__':
             # cursor.execute("ALTER TABLE jobs DROP COLUMN end_timestamp")
 
         print(cols)
+
+    conn.close()
