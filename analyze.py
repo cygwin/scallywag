@@ -131,7 +131,9 @@ def parse_cygport(fn):
             value = ''
             matches = re.finditer(r'^\s*' + var + r'(?:\+|)=\s*"?(.*?)"?\s*$', content, re.MULTILINE | re.DOTALL)
             for match in matches:
-                value += match.group(1) + ' '
+                if value:
+                    value += ' '
+                value += match.group(1)
             if value:
                 var_values[var] = value
 
