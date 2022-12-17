@@ -201,7 +201,19 @@ def analyze(repodir, default_tokens):
         if any(i in inherited for i in ['cross', 'texlive']):
             arches = ['noarch']
 
-        depends = set.union(depends, depends_from_inherits(inherited))
+        # for cross-packages, we need the appropriate cross-toolchain
+        if 'cross' in inherited:
+            cross_host = get_var('CROSS_HOST')
+            pkg_prefix = cross_package_prefixes.get(cross_host, '')
+            if not pkg_prefix:
+                logging.error('cross_host: %s, pkg_prefix is unknown' % (cross_host))
+                return PackageKind()
+            logging.info('cross_host: %s, pkg_prefix: %s' % (cross_host, pkg_prefix))
+
+            for tool in ['binutils', 'gcc-core', 'gcc-g++', 'pkg-config']:
+                depends.add('%s%s' % (pkg_prefix, tool))
+
+        depends.update(depends_from_inherits(inherited))
 
         return PackageKind(kind='cygport', script=fn, depends=depends, arches=arches, tokens=tokens)
 
@@ -279,15 +291,6 @@ def depends_from_inherits(inherits):
     # if it uses autotools, it will want pkg-config
     if ('autotools' in inherits) or (len(inherits) == 0):
         build_deps.add('pkg-config')
-
-    # for cross-packages, we need the appropriate cross-toolchain
-    if 'cross' in inherits:
-        cross_host = get_var('CROSS_HOST')
-        pkg_prefix = cross_package_prefixes.get(cross_host, '')
-        logging.info('cross_host: %s, pkg_prefix: %s' % (cross_host, pkg_prefix))
-
-        for tool in ['binutils', 'gcc-core', 'gcc-g++', 'pkg-config']:
-            build_deps.add('%s%s' % (pkg_prefix, tool))
 
     logging.info('build dependencies (deduced from inherits): %s' % (','.join(sorted(build_deps))))
 
