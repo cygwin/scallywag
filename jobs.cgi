@@ -160,7 +160,7 @@ def results(parse):
             result += '<td></td>'
 
         if duration:
-            result += '<td>%s</td>' % (int(duration))
+            result += '<td>%s</td>' % (str(datetime.timedelta(seconds=int(duration))))
         else:
             result += '<td></td>'
 
