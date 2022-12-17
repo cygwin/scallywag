@@ -102,9 +102,12 @@ def fetch_metadata():
 
     with sqlite3.connect(carpetbag.dbfile) as conn:
         c = conn.execute("SELECT id, backend, backend_id FROM jobs WHERE status = 'fetching metadata'")
-        if c.rowcount > 0:
+        rows = c.fetchall()
+
+        if len(rows) > 0:
             logging.info('fetched metadata %d rows' % c.rowcount)
-        for r in c:
+
+        for r in rows:
             buildid = r[0]
             backend = r[1]
             backend_id = r[2]
