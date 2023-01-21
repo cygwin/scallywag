@@ -36,9 +36,13 @@ def fetch():
     with sqlite3.connect(carpetbag.dbfile) as conn:
         scan = False
         c = conn.execute("SELECT id, user, arches, artifacts, backend FROM jobs WHERE status = 'fetching'")
-        if c.rowcount > 0:
-            logging.info('fetched %d rows' % c.rowcount)
-        for r in c:
+
+        rows = c.fetchall()
+
+        if len(rows) > 0:
+            logging.info('fetched metadata %d rows' % len(rows))
+
+        for r in rows:
             buildid = r[0]
             user = r[1]
             backend = r[4]
@@ -116,7 +120,7 @@ def fetch_metadata():
         rows = c.fetchall()
 
         if len(rows) > 0:
-            logging.info('fetched metadata %d rows' % c.rowcount)
+            logging.info('fetched metadata %d rows' % len(rows))
 
         for r in rows:
             buildid = r[0]
