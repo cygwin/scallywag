@@ -3,11 +3,11 @@
 # post-receive hook to start a package build
 #
 
-import getpass
 import os
-import pwd
 import sys
+
 from request_build import request_build
+from utils import get_maintainer
 
 if __name__ == '__main__':
     if 'GL_REPO' in os.environ:
@@ -17,17 +17,7 @@ if __name__ == '__main__':
         # otherwise, assume repository is the working directory
         repo = os.getcwd()
 
-    if 'CYGNAME' in os.environ:
-        # if we're invoked by ssh-wrapper, CYGNAME will be set
-        maintainer = os.environ['CYGNAME']
-    else:
-        # otherwise, try to turn UID in a full name
-        gecos = pwd.getpwuid(os.getuid()).pw_gecos
-        maintainer = gecos.split(',', 1)[0]
-
-        # failing that, use login name
-        if not maintainer:
-            maintainer = getpass.getuser()
+    maintainer = get_maintainer()
 
     print('scallywag: invoked on repository {0}, by maintainer {1}'.format(repo, maintainer))
 
