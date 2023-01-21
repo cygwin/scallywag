@@ -11,6 +11,7 @@ import os
 import pathlib
 import shutil
 import signal
+import socket
 import sqlite3
 import subprocess
 import sys
@@ -30,6 +31,8 @@ import gh_token
 
 
 def fetch():
+    incomplete = False
+
     with sqlite3.connect(carpetbag.dbfile) as conn:
         scan = False
         c = conn.execute("SELECT id, user, arches, artifacts, backend FROM jobs WHERE status = 'fetching'")
@@ -56,8 +59,14 @@ def fetch():
                         req.add_header('Authorization', 'Bearer ' + gh_token.fetch_iat())
 
                     logging.info('fetching %s' % url)
-                    with urllib.request.urlopen(req) as response:
-                        shutil.copyfileobj(response, tmpfile)
+
+                    try:
+                        with urllib.request.urlopen(req, timeout=60) as response:
+                            shutil.copyfileobj(response, tmpfile)
+                    except socket.timeout:
+                        incomplete = True
+                        break
+
                 # close tmpfile
 
                 # unpack to staging area
@@ -95,6 +104,8 @@ def fetch():
                 pass
 
     conn.close()
+
+    return incomplete
 
 
 def fetch_metadata():
@@ -139,7 +150,7 @@ def fetch_metadata():
 
 def process():
     incomplete = fetch_metadata()
-    fetch()
+    incomplete = fetch() or incomplete
     return incomplete
 
 
