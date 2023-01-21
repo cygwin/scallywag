@@ -213,3 +213,26 @@ def request_build(commit, reference, package, maintainer, tokens=''):
                      ('pending', buildurl, now, backend, bbid, buildnumber))
         conn.commit()
     conn.close()
+
+
+def _github_workflow_cancel(wfr_id):
+    req = urllib.request.Request('https://api.github.com/repos/cygwin/scallywag/actions/runs/{}/cancel'.format(wfr_id), method='POST')
+
+    req.add_header('Accept', 'application/vnd.github.v3+json')
+    req.add_header('Authorization', 'Bearer ' + gh_token.fetch_iat())
+
+    try:
+        response = urllib.request.urlopen(req)
+    except urllib.error.URLError as e:
+        response = e
+
+    status = response.getcode()
+    if status != 202:
+        print('scallywag: GitHub REST API failed status %s' % (status))
+
+
+def cancel_build(backend, bbid):
+    if backend == 'github':
+        _github_workflow_cancel(bbid)
+    else:
+        print('job cancellation not implemented for backend %s' % backend)

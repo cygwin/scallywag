@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+#
+# cli interface to manipulate a job
+#
+
+import argparse
+import contextlib
+import sqlite3
+import sys
+
+import carpetbag
+from request_build import request_build, cancel_build
+from utils import get_maintainer
+
+
+def lookup_id(id):
+    with contextlib.closing(sqlite3.connect(carpetbag.dbfile)) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.execute('SELECT * FROM jobs WHERE id = ?', (id,))
+        row = cursor.fetchone()
+
+    if not row:
+        sys.exit("job id {} not found".format(id))
+
+    return row
+
+
+def owns_job(row):
+    # check for matching maintainer name
+    owner = row['user']
+    maintainer = get_maintainer()
+    if owner != maintainer:
+        sys.exit("job id {} is owned by maintainer {}, not {}".format(row['id'], owner, maintainer))
+
+    return True
+
+#
+# subcommands
+#
+
+
+def cancel(id):
+    row = lookup_id(id)
+    owns_job(row)
+
+    backend = row['backend']
+    bbid = row['backend_id']
+
+    # ask backend to cancel build
+    cancel_build(backend, bbid)
+
+
+def deploy(id):
+    row = lookup_id(id)
+    owns_job(row)
+
+    if row['status'] != 'succeeded':
+        sys.exit("job id {} isn't deployable from status '{}'".format(row['id'], row['status']))
+
+    # if deployable, update to 'fetching' status, irrespective of token
+    if not carpetbag.deploy(row, force=True):
+        sys.exit("job id {} isn't deployable due to reference or package name restrictions")
+
+
+def rerun(id, override_tokens):
+    row = lookup_id(id)
+
+    commit = row['hash']
+    ref = row['ref']
+    package = row['srcpkg']
+    maintainer = row['user']
+    tokens = row['tokens']
+
+    if override_tokens is not None:
+        tokens = ' '.join(override_tokens)
+
+    print(commit, ref, package, maintainer, tokens)
+    request_build(commit, ref, package, maintainer, tokens)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='build job control')
+    subparsers = parser.add_subparsers(title='subcommands', dest='subcommand')
+    # required=True not supported till python 3.7
+
+    parser_cancel = subparsers.add_parser('cancel', help='cancel job')
+    parser_cancel.add_argument('id', metavar='ID', type=int, help='job id')
+
+    parser_deploy = subparsers.add_parser('deploy', help='deploy job')
+    parser_deploy.add_argument('id', metavar='ID', type=int, help='job id')
+
+    parser_help = subparsers.add_parser('help', help='this help')
+
+    parser_rerun = subparsers.add_parser('rerun', help='re-run job')
+    parser_rerun.add_argument('id', metavar='ID', type=int, help='job id')
+    parser_rerun.add_argument('--token', metavar='TOKEN', action='append', help='tokens (default: as previous run)', default=None)
+
+    args = parser.parse_args()
+
+    if args.subcommand == 'help' or args.subcommand is None:
+        parser.print_help()
+    elif args.subcommand == 'deploy':
+        deploy(args.id)
+    elif args.subcommand == 'cancel':
+        cancel(args.id)
+    elif args.subcommand == 'rerun':
+        rerun(args.id, args.token)
+    else:
+        print("Unknown subcommand '{}'".format(args.subcommand))
+        sys.exit(1)

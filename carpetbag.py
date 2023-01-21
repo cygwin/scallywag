@@ -14,7 +14,7 @@ class Update:
         pass
 
 
-def deploy(tokens):
+def deployable_token(tokens):
     if ('nobuild' in tokens) or ('nodeploy' in tokens):
         return False
 
@@ -22,6 +22,12 @@ def deploy(tokens):
         return True
 
     return False
+
+
+def deployable_job(u):
+    return ((u.status == 'succeeded') and
+            (u.reference == 'refs/heads/master') and
+            (u.package != 'playground'))
 
 
 def update_status(u):
@@ -59,14 +65,22 @@ def update_metadata(u):
         u.arch_list = ' '.join(sorted(u.artifacts.keys()))
         conn.execute("UPDATE jobs SET arches = ?, artifacts = ? WHERE id = ?", (u.arch_list, ' '.join([u.artifacts[a] for a in sorted(u.artifacts.keys())]), u.buildnumber))
 
-        # Doing the fetch and deploy under the 'apache' user is not a good idea.
-        # Instead we mark the build as ready to fetch, which a separate process
-        # does.
-        if (u.reference == 'refs/heads/master') and (u.package != 'playground') and deploy(u.tokens):
-            conn.execute("UPDATE jobs SET status = 'fetching' WHERE id = ?", (u.buildnumber,))
-        else:
-            if not hasattr(u, 'status'):
-                u.status = 'succeeded'
-            conn.execute("UPDATE jobs SET status = ? WHERE id = ?", (u.status, u.buildnumber))
+        if not hasattr(u, 'status'):
+            u.status = 'succeeded'
+
+        conn.execute("UPDATE jobs SET status = ? WHERE id = ?", (u.status, u.buildnumber))
 
     conn.close()
+    deploy(u)
+
+
+# Doing the fetch and deploy under the 'apache' user is not a good idea.
+# Instead we mark the build as ready to fetch, which a separate process does.
+def deploy(u, force=False):
+    if deployable_job(u) and (deployable_token(u.tokens) or force):
+        with sqlite3.connect(dbfile) as conn:
+            conn.execute("UPDATE jobs SET status = 'fetching' WHERE id = ?", (u.buildnumber,))
+        conn.close()
+        return True
+
+    return False
