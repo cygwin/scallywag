@@ -30,6 +30,9 @@ import gh
 import gh_token
 
 
+_LOGGER = logging.getLogger(__name__)
+
+
 def fetch():
     incomplete = False
 
@@ -40,7 +43,7 @@ def fetch():
         rows = c.fetchall()
 
         if len(rows) > 0:
-            logging.info('fetched metadata %d rows' % len(rows))
+            _LOGGER.info('fetched metadata %d rows' % len(rows))
 
         for r in rows:
             buildid = r[0]
@@ -62,7 +65,7 @@ def fetch():
                     if backend == 'github':
                         req.add_header('Authorization', 'Bearer ' + gh_token.fetch_iat())
 
-                    logging.info('fetching %s' % url)
+                    _LOGGER.info('fetching %s' % url)
 
                     try:
                         with urllib.request.urlopen(req, timeout=60) as response:
@@ -76,13 +79,13 @@ def fetch():
                 # unpack to staging area
                 dest = '/sourceware/cygwin-staging/staging/%s/%s/release' % (user, arch)
                 os.makedirs(dest, exist_ok=True)
-                logging.info('unpacking to %s' % dest)
+                _LOGGER.info('unpacking to %s' % dest)
                 r = subprocess.run(['unzip', '-o', tmpfile.name, '-d', dest],
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT)
 
                 for l in r.stdout.decode('utf-8').splitlines():
-                    logging.info('unzip: %s' % l)
+                    _LOGGER.info('unzip: %s' % l)
 
                 # mark as ready for calm
                 if r.returncode == 0:
@@ -100,7 +103,7 @@ def fetch():
             try:
                 pid = int(open('/sourceware/cygwin-staging/calm.pid').read())
                 try:
-                    logging.info('signalled calm to scan staging area')
+                    _LOGGER.info('signalled calm to scan staging area')
                     os.kill(pid, signal.SIGUSR1)
                 except ProcessLookupError:
                     pass
@@ -120,7 +123,7 @@ def fetch_metadata():
         rows = c.fetchall()
 
         if len(rows) > 0:
-            logging.info('fetched metadata %d rows' % len(rows))
+            _LOGGER.info('fetched metadata %d rows' % len(rows))
 
         for r in rows:
             buildid = r[0]
@@ -138,7 +141,7 @@ def fetch_metadata():
             if gh.examine_run_artifacts(backend_id, u):
                 carpetbag.update_metadata(u)
             else:
-                logging.info("fetching metadata for %s failed, will retry later" % buildid)
+                _LOGGER.info("fetching metadata for %s failed, will retry later" % buildid)
                 # if examine_run_artifacts fails, we'll try again later
                 incomplete = True
 
@@ -160,18 +163,19 @@ def process():
 
 def logging_setup():
     # setup logging to a file
-    rfh = logging.handlers.TimedRotatingFileHandler(os.path.join('/sourceware/cygwin-staging/logs/scallywag-fetch.log'), backupCount=48, when='midnight')
+    rfh = logging.handlers.TimedRotatingFileHandler('/sourceware/cygwin-staging/logs/scallywag-fetch.log', backupCount=48, when='midnight')
     rfh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)-8s - %(message)s'))
     rfh.setLevel(logging.DEBUG)
-    logging.getLogger().addHandler(rfh)
+    _LOGGER.addHandler(rfh)
 
     # setup logging to stdout
     ch = logging.StreamHandler(sys.stdout)
     ch.setFormatter(logging.Formatter(os.path.basename(sys.argv[0]) + ': %(message)s'))
-    logging.getLogger().setLevel(logging.INFO)
-    logging.getLogger().addHandler(ch)
+    ch.setLevel(logging.INFO)
+    _LOGGER.addHandler(ch)
 
-    # no filtering on level in root logger
+    # turn off filtering on level in root logger (which defaults to WARNING, and
+    # which all non-root loggers delegate to by default)
     logging.getLogger().setLevel(logging.NOTSET)
 
 
@@ -182,7 +186,7 @@ def main():
                                    pidfile=lockfile.pidlockfile.PIDLockFile('/sourceware/cygwin-staging/scallywag-fetch.pid'))
 
     def sigterm(signum, frame):
-        logging.debug("SIGTERM")
+        _LOGGER.debug("SIGTERM")
         context.terminate(signum, frame)
 
     context.signal_map = {
@@ -191,8 +195,8 @@ def main():
 
     with context:
         logging_setup()
-        logging.info("scallywag-fetch daemon started, pid %d" % (os.getpid()))
-        logging.info('has_inotify %s' % has_inotify)
+        _LOGGER.info("scallywag-fetch daemon started, pid %d" % (os.getpid()))
+        _LOGGER.info('has_inotify %s' % has_inotify)
 
         try:
             incomplete = False
@@ -217,9 +221,9 @@ def main():
                     time.sleep(60)
 
         except Exception as e:
-            logging.error("exception %s" % (type(e).__name__), exc_info=True)
+            _LOGGER.error("exception %s" % (type(e).__name__), exc_info=True)
 
-    logging.info("scallywag-fetch daemon stopped")
+    _LOGGER.info("scallywag-fetch daemon stopped")
 
 
 if __name__ == '__main__':
