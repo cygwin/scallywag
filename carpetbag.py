@@ -14,7 +14,7 @@ class Update:
         pass
 
 
-def deploy(maintainer, tokens):
+def deploy(tokens):
     if ('nobuild' in tokens) or ('nodeploy' in tokens):
         return False
 
@@ -62,7 +62,7 @@ def update_metadata(u):
         # Doing the fetch and deploy under the 'apache' user is not a good idea.
         # Instead we mark the build as ready to fetch, which a separate process
         # does.
-        if (u.reference == 'refs/heads/master') and (u.package != 'playground') and deploy(u.maintainer, u.tokens):
+        if (u.reference == 'refs/heads/master') and (u.package != 'playground') and deploy(u.tokens):
             conn.execute("UPDATE jobs SET status = 'fetching' WHERE id = ?", (u.buildnumber,))
         else:
             if not hasattr(u, 'status'):
