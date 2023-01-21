@@ -183,8 +183,8 @@ def request_build(commit, reference, package, maintainer, tokens=''):
 
     # record job as requested and generate buildnumber
     with sqlite3.connect(carpetbag.dbfile) as conn:
-        cursor = conn.execute('INSERT INTO jobs (srcpkg, hash, ref, user, status) VALUES (?, ?, ?, ?, ?)',
-                              (package, commit, reference, maintainer, 'requested'))
+        cursor = conn.execute('INSERT INTO jobs (srcpkg, hash, ref, user, status, tokens) VALUES (?, ?, ?, ?, ?, ?)',
+                              (package, commit, reference, maintainer, 'requested', tokens))
         buildnumber = cursor.lastrowid
         conn.commit()
     conn.close()

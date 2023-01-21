@@ -25,6 +25,9 @@ if __name__ == '__main__':
             # needs sqlite > 3.35.0
             # cursor.execute("ALTER TABLE jobs DROP COLUMN end_timestamp")
 
+        if 'tokens' not in cols:
+            cursor.execute("ALTER TABLE jobs ADD COLUMN tokens TEXT NOT NULL DEFAULT ''")
+
         print(cols)
 
     conn.close()

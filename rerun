@@ -10,7 +10,7 @@ import carpetbag
 from request_build import request_build
 
 
-def rerun(id, tokens):
+def rerun(id, override_tokens):
     with sqlite3.connect(carpetbag.dbfile) as conn:
         conn.row_factory = sqlite3.Row
         cursor = conn.execute('SELECT * FROM jobs WHERE id = ?', (id,))
@@ -21,6 +21,10 @@ def rerun(id, tokens):
     ref = row['ref']
     package = row['srcpkg']
     maintainer = row['user']
+    tokens = row['tokens']
+
+    if override_tokens is not None:
+        tokens = ' '.join(override_tokens)
 
     print(commit, ref, package, maintainer, tokens)
     request_build(commit, ref, package, maintainer, tokens)
@@ -29,7 +33,7 @@ def rerun(id, tokens):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Re-run job')
     parser.add_argument('id', metavar='ID', type=int, help='job id')
-    parser.add_argument('--token', metavar='TOKEN', action='append', help='job id', default=[])
+    parser.add_argument('--token', metavar='TOKEN', action='append', help='job id', default=None)
     args = parser.parse_args()
 
-    rerun(args.id, ' '.join(args.token))
+    rerun(args.id, args.token)
