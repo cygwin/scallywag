@@ -50,6 +50,7 @@ var_list = [
     'CROSS_HOST',
     'DEPEND',
     'INHERITED',
+    'RESTRICT',
     'SCALLYWAG',
 ]
 var_values = {}
@@ -189,6 +190,10 @@ def analyze(repodir, default_tokens):
         if scallywag:
             tokens.extend(scallywag.split())
             logging.info('cygport SCALLYWAG: %s' % tokens)
+
+        if 'upload' in get_var('RESTRICT', ''):
+            tokens.add('nodeploy')
+            logging.info("cygport RESTRICT contains 'upload', adding 'nodeploy'")
 
         # detect if there is an ARCH line
         arches = get_var('ARCHES')
