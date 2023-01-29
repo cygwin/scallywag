@@ -57,8 +57,22 @@ def deploy(id):
     if row['status'] != 'succeeded':
         sys.exit("job id {} isn't deployable from status '{}'".format(row['id'], row['status']))
 
+    # convert db row to an Update object
+    u = carpetbag.Update()
+    for k in row.keys():
+
+        attr = k
+        if k == 'ref':
+            attr = 'reference'
+        elif k == 'srcpkg':
+            attr = 'package'
+        elif k == 'id':
+            attr = 'buildnumber'
+
+        setattr(u, attr, row[k])
+
     # if deployable, update to 'fetching' status, irrespective of token
-    if not carpetbag.deploy(row, force=True):
+    if not carpetbag.deploy(u, force=True):
         sys.exit("job id {} isn't deployable due to reference or package name restrictions")
 
 
