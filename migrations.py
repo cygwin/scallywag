@@ -30,4 +30,7 @@ if __name__ == '__main__':
 
         print(cols)
 
+        conn.execute("UPDATE jobs SET status = ? WHERE status = ?", ('build succeeded', 'succeeded'))
+        conn.execute("UPDATE jobs SET status = ? WHERE status = ?", ('build failed', 'failed'))
+
     conn.close()

@@ -54,7 +54,7 @@ def deploy(id):
     row = lookup_id(id)
     owns_job(row)
 
-    if row['status'] != 'succeeded':
+    if row['status'] != 'build succeeded':
         sys.exit("job id {} isn't deployable from status '{}'".format(row['id'], row['status']))
 
     # convert db row to an Update object

@@ -25,7 +25,7 @@ def deployable_token(tokens):
 
 
 def deployable_job(u):
-    return ((u.status == 'succeeded') and
+    return ((u.status == 'build succeeded') and
             (u.reference == 'refs/heads/master') and
             (u.package != 'playground'))
 
@@ -42,7 +42,7 @@ def update_status(u):
         conn.execute('UPDATE jobs SET status = ?, logurl = ?, duration = ? WHERE id = ?',
                      (u.status, u.buildurl, u.duration, u.buildnumber))
 
-        if u.status != 'succeeded':
+        if u.status != 'build succeeded':
             return
 
         # The only piece of new data the metadata actually provides is the
@@ -66,7 +66,7 @@ def update_metadata(u):
         conn.execute("UPDATE jobs SET arches = ?, artifacts = ? WHERE id = ?", (u.arch_list, ' '.join([u.artifacts[a] for a in sorted(u.artifacts.keys())]), u.buildnumber))
 
         if not hasattr(u, 'status'):
-            u.status = 'succeeded'
+            u.status = 'build succeeded'
 
         conn.execute("UPDATE jobs SET status = ? WHERE id = ?", (u.status, u.buildnumber))
 

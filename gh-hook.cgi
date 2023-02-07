@@ -46,11 +46,11 @@ def process(data):
     u.duration = parse_iso8601_time(wfr['updated_at']) - parse_iso8601_time(wfr['created_at'])
 
     if wfr['conclusion'] == 'success':
-        u.status = 'succeeded'
+        u.status = 'build succeeded'
     elif wfr['conclusion'] == 'cancelled':
         u.status = 'cancelled'
     else:
-        u.status = 'failed'
+        u.status = 'build failed'
 
     return u
 

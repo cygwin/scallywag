@@ -131,11 +131,19 @@ def results(parse):
         else:
             srcpkglink = '%s' % (srcpkg)
 
+        def status_to_class(s):
+            if s.endswith('succeeded') or s == 'deployed':
+                return 'succeeded'  # green
+            elif s.endswith('failed'):
+                return 'failed'   # red
+            else:
+                return 'normal'
+
         result += textwrap.dedent('''<td>%d</td>
                                      <td>%s</td>
                                      <td class="%s">%s</td>
                                      <td>%s</td>
-                                     <td><a href="%s">%s</a></td>''') % (jobid, srcpkglink, status, status, username, commiturl, shorthash)
+                                     <td><a href="%s">%s</a></td>''') % (jobid, srcpkglink, status_to_class(status), status, username, commiturl, shorthash)
 
         if ref:
             ref = ref.replace('refs/heads/', '')
