@@ -102,7 +102,16 @@ def _github_most_recent_wfr_id():
 
 
 def _github_workflow_trigger(package, maintainer, commit, reference, default_tokens, buildnumber):
-    prev_wrf_id, _ = _github_most_recent_wfr_id()
+    for _i in range(1, 60):
+        prev_wfr_id, _ = _github_most_recent_wfr_id()
+
+        if prev_wfr_id != 0:
+            break
+
+        time.sleep(1)
+    else:
+        print('scallywag: timeout waiting for GitHub to report previous wfr_id')
+        print('scallywag: PLEASE REPORT THIS!')
 
     # strip out any over-quoting in the token, as it's harmful to passing the
     # client_payload into scallywag via the command line
@@ -151,12 +160,12 @@ def _github_workflow_trigger(package, maintainer, commit, reference, default_tok
     for _i in range(1, 60):
         wfr_id, buildurl = _github_most_recent_wfr_id()
 
-        if wfr_id != prev_wrf_id:
+        if wfr_id != prev_wfr_id:
             return wfr_id, buildurl
 
         time.sleep(1)
 
-    print('scallywag: timeout waiting for GitHub to assign a wrf_id')
+    print('scallywag: timeout waiting for GitHub to assign a wfr_id')
     print('scallywag: PLEASE REPORT THIS!')
 
     return 0, None
