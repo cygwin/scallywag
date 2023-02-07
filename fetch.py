@@ -77,7 +77,7 @@ def fetch():
                 # close tmpfile
 
                 # unpack to staging area
-                dest = '/sourceware/cygwin-staging/staging/%s/%s/release' % (user, arch)
+                dest = '/sourceware/cygwin-staging/staging/%s/%s/%s/release' % (buildid, user, arch)
                 os.makedirs(dest, exist_ok=True)
                 _LOGGER.info('unpacking to %s' % dest)
                 r = subprocess.run(['unzip', '-o', tmpfile.name, '-d', dest],
@@ -96,7 +96,7 @@ def fetch():
                 os.remove(tmpfile.name)
 
                 # update status to deployed
-                conn.execute("UPDATE jobs SET status = 'deployed' WHERE id = ?", (buildid,))
+                conn.execute("UPDATE jobs SET status = 'deploying' WHERE id = ?", (buildid,))
 
         # signal calm to scan staging
         if scan:
