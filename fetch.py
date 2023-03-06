@@ -31,6 +31,7 @@ import gh_token
 
 
 _LOGGER = logging.getLogger(__name__)
+logging.getLogger('inotify.adapters').propagate = False
 
 
 def fetch():
