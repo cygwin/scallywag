@@ -140,7 +140,7 @@ if package.kind == 'cygport':
         if 'notest' not in package.tokens:
             subcommands.append('test')
     else:
-        subcommands.append('srcpackage')
+        subcommands.append('prep srcpackage')
     logging.info("running 'cygport %s'" % (' '.join(subcommands)))
     rc = subprocess.call([os.path.join(mydir, 'build.sh'), package.script] +
                          subcommands, stdin=subprocess.DEVNULL)
