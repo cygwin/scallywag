@@ -118,7 +118,7 @@ def results(parse):
         # artifacts = row['artifacts']
         ref = row['ref']
 
-        commiturl = 'https://cygwin.com/git-cygwin-packages/?p=git/cygwin-packages/%s.git;a=commitdiff;h=%s' % (srcpkg, commit)
+        commiturl = 'https://cygwin.com/cgit/cygwin-packages/%s/commit/?id=%s' % (srcpkg, commit)
         shorthash = commit[0:8]
 
         if jobid == highlight:
@@ -182,7 +182,7 @@ def results(parse):
 
     result += '<div class="gridfooter">'
     result += '<div class="floatleft">'
-    result += '<a href="https://cygwin.com/git/?p=cygwin-apps/scallywag.git">scallywag</a>'
+    result += '<a href="https://cygwin.com/cgit/cygwin-apps/scallywag/">scallywag</a>'
     result += '</div>'
     result += '<div class="center">'
     if page > 1:
