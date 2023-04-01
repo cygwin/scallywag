@@ -88,10 +88,13 @@ def cygport_vars(fn):
     # elide any information messages
     output = re.sub(r'^\x1b.*\*\*\* Info:.*\n', r'', output, flags=re.MULTILINE)
 
-    for m in re.finditer(r'^(?:declare -[-r] |)(.*?)="(.*?)"$', output, re.MULTILINE | re.DOTALL):
-        # TBD: handle shell escapes in value?
-        var_values[m.group(1)] = m.group(2)
-        logging.info('%s="%s"' % (m.group(1), m.group(2)))
+    for m in re.finditer(r'^(?:declare -[-r] |)(.*?)=(?:"|\$\')(.*?)(?:"|\')$', output, re.MULTILINE | re.DOTALL):
+        value = m.group(2)
+        # handle shell escapes in a $'' value
+        value = value.replace(r'\n', ' ')
+
+        var_values[m.group(1)] = value
+        logging.info('%s="%s"' % (m.group(1), value))
 
     # workaround for a bug cygport
     # (arch probing gets information messages from nested invocation into ARCH)
