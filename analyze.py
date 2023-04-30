@@ -134,11 +134,11 @@ def parse_cygport(fn):
         # accurate way to evaluate it is to execute the cygport).
         for var in var_list + ['ARCH']:
             value = ''
-            matches = re.finditer(r'^\s*' + var + r'(?:\+|)=\s*"?(.*?)"?\s*$', content, re.MULTILINE | re.DOTALL)
+            matches = re.finditer(r'^\s*' + var + r'(?:\+|)=\s*("?)(.*?)\1\s*$', content, re.MULTILINE | re.DOTALL)
             for match in matches:
                 if value:
                     value += ' '
-                value += match.group(1)
+                value += match.group(2)
             if value:
                 var_values[var] = value
 
