@@ -92,6 +92,7 @@ def cygport_vars(fn):
         value = m.group(2)
         # handle shell escapes in a $'' value
         value = value.replace(r'\n', ' ')
+        value = value.replace(r'\t', ' ')
 
         var_values[m.group(1)] = value
         logging.info('%s="%s"' % (m.group(1), value))
