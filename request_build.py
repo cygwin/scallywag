@@ -191,9 +191,10 @@ def request_build(commit, reference, package, maintainer, tokens=''):
         return
 
     # record job as requested and generate buildnumber
+    now = time.time()
     with sqlite3.connect(carpetbag.dbfile) as conn:
-        cursor = conn.execute('INSERT INTO jobs (srcpkg, hash, ref, user, status, tokens) VALUES (?, ?, ?, ?, ?, ?)',
-                              (package, commit, reference, maintainer, 'requested', tokens))
+        cursor = conn.execute('INSERT INTO jobs (srcpkg, hash, ref, user, status, timestamp, tokens) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                              (package, commit, reference, maintainer, 'requested', now, tokens))
         buildnumber = cursor.lastrowid
         conn.commit()
     conn.close()
@@ -216,10 +217,9 @@ def request_build(commit, reference, package, maintainer, tokens=''):
     print('scallywag: https://cygwin.com/cgi-bin2/jobs.cgi?id={0}'.format(buildnumber))
 
     # record job as pending
-    now = time.time()
     with sqlite3.connect(carpetbag.dbfile) as conn:
-        conn.execute('UPDATE jobs SET status = ?, logurl = ?, timestamp = ?, backend = ?, backend_id = ? WHERE id = ?',
-                     ('pending', buildurl, now, backend, bbid, buildnumber))
+        conn.execute('UPDATE jobs SET status = ?, logurl = ?, backend = ?, backend_id = ? WHERE id = ?',
+                     ('pending', buildurl, backend, bbid, buildnumber))
         conn.commit()
     conn.close()
 
