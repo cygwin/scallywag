@@ -124,7 +124,7 @@ def parse_cygport(fn):
         content = f.read()
 
         # discard comments
-        content = re.sub(r'#.*$', '', content)
+        content = re.sub(r'#.*$', '', content, flags=re.MULTILINE)
 
         # fold any line-continuations
         content = re.sub(r'\\\n', '', content)
