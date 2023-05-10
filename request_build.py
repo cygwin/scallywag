@@ -6,6 +6,8 @@
 import contextlib
 import fcntl
 import json
+import logging
+import logging.handlers
 import os
 import re
 import sqlite3
@@ -17,6 +19,13 @@ import carpetbag
 import gh_token
 import appveyor_token
 
+rfh = logging.handlers.TimedRotatingFileHandler('/sourceware/cygwin-staging/logs/build-request.log', backupCount=48, when='midnight')
+rfh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)-8s - %(message)s'))
+rfh.setLevel(logging.DEBUG)
+
+logging.getLogger().addHandler(rfh)
+logging.getLogger().setLevel(logging.NOTSET)
+
 
 @contextlib.contextmanager
 def locked():
@@ -24,11 +33,13 @@ def locked():
     lockfile = open('/tmp/scallywag.request_build.lock', 'w+')
     os.umask(old_umask)
     fcntl.flock(lockfile.fileno(), fcntl.LOCK_EX)
+    logging.info("acquired request_build lock")
     try:
         yield lockfile
     finally:
         fcntl.flock(lockfile.fileno(), fcntl.LOCK_UN)
         lockfile.close()
+        logging.info("released request_build lock")
 
 
 def _appveyor_build_request(package, maintainer, commit, reference, default_tokens, buildnumber):
@@ -88,16 +99,21 @@ def _github_most_recent_wfr_id():
         response = e
 
     status = response.getcode()
+    logging.info("runs REST API status %s" % status)
     if status != 200:
         print('scallywag: GitHub REST API failed status %s' % (status))
         return 0, None
 
-    j = json.loads(response.read().decode('utf-8'))
+    resp = response.read().decode('utf-8')
+    logging.info("runs REST API response %s" % resp)
+    j = json.loads(resp)
 
     wfr = j['workflow_runs']
     if len(wfr) <= 0:
+        logging.info("no most recent wrf_id available")
         return 0, None
 
+    logging.info("most recent wrf_id %s" % wfr[0]['id'])
     return wfr[0]['id'], wfr[0]['html_url']
 
 
@@ -108,8 +124,10 @@ def _github_workflow_trigger(package, maintainer, commit, reference, default_tok
         if prev_wfr_id != 0:
             break
 
+        logging.info("waiting before retry")
         time.sleep(1)
     else:
+        logging.info("timeout waiting for GitHub to report previous wfr_id")
         print('scallywag: timeout waiting for GitHub to report previous wfr_id')
         print('scallywag: PLEASE REPORT THIS!')
 
@@ -163,8 +181,10 @@ def _github_workflow_trigger(package, maintainer, commit, reference, default_tok
         if wfr_id != prev_wfr_id:
             return wfr_id, buildurl
 
+        logging.info("waiting before retry")
         time.sleep(1)
 
+    logging.info("timeout waiting for GitHub to assign a wfr_id")
     print('scallywag: timeout waiting for GitHub to assign a wfr_id')
     print('scallywag: PLEASE REPORT THIS!')
 
