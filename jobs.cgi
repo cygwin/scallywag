@@ -182,7 +182,7 @@ def results(parse):
 
     result += '<div class="gridfooter">'
     result += '<div class="floatleft">'
-    result += '<a href="https://cygwin.com/cgit/cygwin-apps/scallywag/">scallywag</a>'
+    result += 'powered by <a href="https://cygwin.com/cgit/cygwin-apps/scallywag/">scallywag</a>, duct-tape and optimism'
     result += '</div>'
     result += '<div class="center">'
     if page > 1:
