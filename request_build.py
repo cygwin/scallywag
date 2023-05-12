@@ -19,7 +19,17 @@ import carpetbag
 import gh_token
 import appveyor_token
 
-rfh = logging.handlers.TimedRotatingFileHandler('/sourceware/cygwin-staging/logs/build-request.log', backupCount=48, when='midnight')
+
+# subclass TimedRotatingFileHandler with open umask
+class SharedTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
+    def _open(self):
+        old_umask = os.umask(0o000)
+        rtv = logging.handlers.RotatingFileHandler._open(self)
+        os.umask(old_umask)
+        return rtv
+
+
+rfh = SharedTimedRotatingFileHandler('/sourceware/cygwin-staging/logs/build-request.log', backupCount=48, when='midnight')
 rfh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)-8s - %(message)s'))
 rfh.setLevel(logging.DEBUG)
 
@@ -37,9 +47,9 @@ def locked():
     try:
         yield lockfile
     finally:
+        logging.info("releasing request_build lock")
         fcntl.flock(lockfile.fileno(), fcntl.LOCK_UN)
         lockfile.close()
-        logging.info("released request_build lock")
 
 
 def _appveyor_build_request(package, maintainer, commit, reference, default_tokens, buildnumber):
