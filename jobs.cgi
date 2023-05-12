@@ -188,7 +188,7 @@ def results(parse):
     if page > 1:
         result += '<a href="?%s">previous</a>' % query_string_modify_page(page - 1)
     result += ' page %d of %d ' % (page, maxpages)
-    if page < (maxpages - 1):
+    if page < maxpages:
         result += '<a href="?%s">next</a>' % query_string_modify_page(page + 1)
     result += '</div>'
     result += '</div>'
