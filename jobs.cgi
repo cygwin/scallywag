@@ -180,17 +180,18 @@ def results(parse):
         parse['page'] = page
         return urlencode(parse)
 
-    result += '<div class="gridfooter">'
-    result += '<div class="floatleft">'
+    result += '<div class="gridfooter container">'
+    result += '<span class="floatleft">'
     result += 'powered by <a href="https://cygwin.com/cgit/cygwin-apps/scallywag/">scallywag</a>, duct-tape and optimism'
-    result += '</div>'
-    result += '<div class="center">'
+    result += '</span>'
+    result += '<span class="center">'
     if page > 1:
         result += '<a href="?%s">previous</a>' % query_string_modify_page(page - 1)
     result += ' page %d of %d ' % (page, maxpages)
     if page < maxpages:
         result += '<a href="?%s">next</a>' % query_string_modify_page(page + 1)
-    result += '</div>'
+    result += '</span>'
+    result += '<span class="right"></span>'
     result += '</div>'
 
     result += textwrap.dedent('''</body>
