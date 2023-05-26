@@ -292,6 +292,7 @@ def depends_from_inherits(inherits):
             (['texlive'], ['texlive-collection-basic']),  # to ensure correct run-time dependency generation
             (['xfce4'], ['xfce4-dev-tools']),
             (['xorg'], ['xorg-util-macros']),
+            (['xvfb'], ['xorg-server', 'xf86-video-dummy', 'xinit']),
     ]:
         for i in pos:
             if i in inherits:
