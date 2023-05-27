@@ -44,7 +44,7 @@ def fetch():
         rows = c.fetchall()
 
         if len(rows) > 0:
-            _LOGGER.info('fetched metadata %d rows' % len(rows))
+            _LOGGER.info('%d rows ready for fetching' % len(rows))
 
         for r in rows:
             buildid = r[0]
@@ -99,19 +99,19 @@ def fetch():
                 # update status to deployed
                 conn.execute("UPDATE jobs SET status = 'deploying' WHERE id = ?", (buildid,))
 
-        # signal calm to scan staging
-        if scan:
-            try:
-                pid = int(open('/sourceware/cygwin-staging/calm.pid').read())
-                try:
-                    _LOGGER.info('signalled calm to scan staging area')
-                    os.kill(pid, signal.SIGUSR1)
-                except ProcessLookupError:
-                    pass
-            except FileNotFoundError:
-                pass
-
     conn.close()
+
+    # signal calm to scan staging
+    if scan:
+        try:
+            pid = int(open('/sourceware/cygwin-staging/calm.pid').read())
+            try:
+                _LOGGER.info('signalled calm to scan staging area')
+                os.kill(pid, signal.SIGUSR1)
+            except ProcessLookupError:
+                pass
+        except FileNotFoundError:
+            pass
 
     return incomplete
 
@@ -124,7 +124,7 @@ def fetch_metadata():
         rows = c.fetchall()
 
         if len(rows) > 0:
-            _LOGGER.info('fetched metadata %d rows' % len(rows))
+            _LOGGER.info('%d rows ready for fetching metadata' % len(rows))
 
         for r in rows:
             buildid = r[0]
