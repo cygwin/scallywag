@@ -71,7 +71,7 @@ def fetch():
                     try:
                         with urllib.request.urlopen(req, timeout=60) as response:
                             shutil.copyfileobj(response, tmpfile)
-                    except socket.timeout:
+                    except (socket.timeout, urllib.error.URLError):
                         incomplete = True
                         break
 
@@ -200,7 +200,7 @@ def main():
         _LOGGER.info('has_inotify %s' % has_inotify)
 
         try:
-            incomplete = False
+            incomplete = True
             # wake when db is changed, or periodically if we have incompletely
             # processed changes
             while True:
