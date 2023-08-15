@@ -66,6 +66,7 @@ def hook():
             arch = evars['ARCH'].replace('i686', 'x86')
             maintainer = evars['MAINTAINER']
             tokens = evars['TOKENS']
+            announce = evars['ANNOUNCE']
 
             if arch != 'skip':
                 if len(job['artifacts']):
@@ -83,6 +84,7 @@ def hook():
     u.reference = reference
     u.maintainer = maintainer
     u.tokens = tokens
+    u.announce = announce
     u.artifacts = artifacts
 
     carpetbag.update_status(u)

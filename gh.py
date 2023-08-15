@@ -63,6 +63,7 @@ def examine_run_artifacts(wfr_id, u):
                     u.reference = mj['REFERENCE']
                     u.maintainer = mj['MAINTAINER']
                     u.tokens = mj['TOKENS']
+                    u.announce = mj['ANNOUNCE']
 
             # remove tmpfile
             os.remove(tmpfile.name)

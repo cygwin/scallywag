@@ -28,6 +28,9 @@ if __name__ == '__main__':
         if 'tokens' not in cols:
             cursor.execute("ALTER TABLE jobs ADD COLUMN tokens TEXT NOT NULL DEFAULT ''")
 
+        if 'announce' not in cols:
+            cursor.execute("ALTER TABLE jobs ADD COLUMN announce TEXT NOT NULL DEFAULT ''")
+
         print(cols)
 
         conn.execute("UPDATE jobs SET status = ? WHERE status = ?", ('build succeeded', 'succeeded'))

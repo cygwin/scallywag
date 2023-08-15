@@ -63,7 +63,7 @@ def update_metadata(u):
 
         # sort, because it's important that 'arch' and 'artifacts' are in the same order!
         u.arch_list = ' '.join(sorted(u.artifacts.keys()))
-        conn.execute("UPDATE jobs SET arches = ?, artifacts = ? WHERE id = ?", (u.arch_list, ' '.join([u.artifacts[a] for a in sorted(u.artifacts.keys())]), u.buildnumber))
+        conn.execute("UPDATE jobs SET arches = ?, artifacts = ?, announce = ? WHERE id = ?", (u.arch_list, ' '.join([u.artifacts[a] for a in sorted(u.artifacts.keys())]), u.announce, u.buildnumber))
 
         if not hasattr(u, 'status'):
             u.status = 'build succeeded'

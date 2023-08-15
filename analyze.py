@@ -29,7 +29,7 @@ import sys
 
 
 class PackageKind:
-    def __init__(self, kind=None, script='', depends=None, arches=None, tokens=None):
+    def __init__(self, kind=None, script='', depends=None, arches=None, tokens=None, announce=''):
         if depends is None:
             depends = set()
         if arches is None:
@@ -42,6 +42,7 @@ class PackageKind:
         self.depends = depends
         self.arches = arches
         self.tokens = tokens
+        self.announce = announce
 
 
 var_list = [
@@ -52,6 +53,7 @@ var_list = [
     'INHERITED',
     'RESTRICT',
     'SCALLYWAG',
+    'ANNOUNCE',
 ]
 var_values = {}
 
@@ -224,7 +226,9 @@ def analyze(repodir, default_tokens):
 
         depends.update(depends_from_inherits(inherited))
 
-        return PackageKind(kind='cygport', script=fn, depends=depends, arches=arches, tokens=tokens)
+        announce = get_var('ANNOUNCE', '')
+
+        return PackageKind(kind='cygport', script=fn, depends=depends, arches=arches, tokens=tokens, announce=announce)
 
     # if there's no cygport file, we look for a g-b-s style .sh file instead
     scripts = [m for m in files if re.search(r'\.sh$', m)]
