@@ -5,6 +5,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import sys
 import time
 import traceback
@@ -44,6 +45,12 @@ def process(data):
     u.backend_id = wfr['id']
     u.buildurl = wfr['html_url']
     u.duration = parse_iso8601_time(wfr['updated_at']) - parse_iso8601_time(wfr['created_at'])
+
+    # extract build_id from the title
+    title = wfr['display_title']
+    match = re.search(r'\((.*)\)', title)
+    if match:
+        u.buildnumber = int(match.group(1))
 
     if wfr['conclusion'] == 'success':
         u.status = 'build succeeded'

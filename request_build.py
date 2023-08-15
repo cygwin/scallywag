@@ -139,14 +139,13 @@ def _github_workflow_trigger(package, maintainer, commit, reference, default_tok
     else:
         logging.info("timeout waiting for GitHub to report previous wfr_id")
         print('scallywag: timeout waiting for GitHub to report previous wfr_id')
-        print('scallywag: PLEASE REPORT THIS!')
 
     # strip out any over-quoting in the token, as it's harmful to passing the
     # client_payload into scallywag via the command line
     default_tokens = re.sub(r'[\'"]', r'', default_tokens)
 
     data = {
-        "event_type": "(%s) %s" % (buildnumber, package),  # use this just because it appears as the run name in UI
+        "event_type": "(%s) %s" % (buildnumber, package),  # 'display_title', appears as the run name in UI
         "client_payload": {
             "BUILDNUMBER": buildnumber,
             "PACKAGE": package,
@@ -196,7 +195,6 @@ def _github_workflow_trigger(package, maintainer, commit, reference, default_tok
 
     logging.info("timeout waiting for GitHub to assign a wfr_id")
     print('scallywag: timeout waiting for GitHub to assign a wfr_id')
-    print('scallywag: PLEASE REPORT THIS!')
 
     return 0, None
 
