@@ -91,12 +91,17 @@ def cygport_vars(fn):
     output = re.sub(r'^\x1b.*\*\*\* Info:.*\n', r'', output, flags=re.MULTILINE)
 
     for m in re.finditer(r'^(?:declare -[-r] |)(.*?)=(?:"|\$\')(.*?)(?:"|\')$', output, re.MULTILINE | re.DOTALL):
+        name = m.group(1)
+
         value = m.group(2)
         # handle shell escapes in a $'' value
-        value = value.replace(r'\n', ' ')
+        if name == 'ANNOUNCE':
+            value = value.replace(r'\n', '\n')
+        else:
+            value = value.replace(r'\n', ' ')
         value = value.replace(r'\t', ' ')
 
-        var_values[m.group(1)] = value
+        var_values[name] = value
         logging.info('%s="%s"' % (m.group(1), value))
 
     # workaround for a bug cygport
