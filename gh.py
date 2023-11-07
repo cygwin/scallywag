@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import json
+import logging
 import os
 import shutil
 import tempfile
@@ -22,8 +23,9 @@ def examine_run_artifacts(wfr_id, u):
         response = e
 
     status = response.getcode()
+    logging.info("artifacts REST API status %s" % status)
     if status != 200:
-        raise Exception(str(status))
+        return False
 
     u.artifacts = {}
     found_metadata = False
