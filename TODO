@@ -5,7 +5,5 @@
 - use a venv to avoid depending on user installation of required python modules
 - don't be terrible
 
-- authenticated ways for maintainers to interact with scallywag (via 'ssh cygwin@cygwin.com jobs <subcommand>' ?)
--- cancel a job
--- retry a job
--- deploy a successful job that run without deploy token
+
+- fetcher should check if pending jobs have completed, in case we've missed a job conclusion status notification

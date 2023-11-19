@@ -30,15 +30,19 @@ def deployable_job(u):
             (u.package != 'playground'))
 
 
+def update_backend_id(u):
+    logging.info(vars(u))
+
+    with sqlite3.connect(dbfile) as conn:
+        conn.execute('UPDATE jobs SET backend_id = ? WHERE id = ?', (u.backend_id, u.buildnumber))
+
+    conn.close()
+
+
 def update_status(u):
     logging.info(vars(u))
 
     with sqlite3.connect(dbfile) as conn:
-        # if the id isn't available, determine it from backend_id
-        if not hasattr(u, 'buildnumber'):
-            cursor = conn.execute('SELECT id FROM jobs WHERE backend_id = ?', (u.backend_id,))
-            u.buildnumber = cursor.fetchone()[0]
-
         conn.execute('UPDATE jobs SET status = ?, logurl = ?, duration = ? WHERE id = ?',
                      (u.status, u.buildurl, u.duration, u.buildnumber))
 

@@ -81,6 +81,10 @@ def hook():
 
     u = process(data)
     if u:
+        # ensure backend_id is set, if it was previously unknown due to timeout waiting for it to be assigned
+        if hasattr(u, 'buildnumber'):
+            carpetbag.update_backend_id(u)
+
         carpetbag.update_status(u)
 
     return '200 OK', ''
