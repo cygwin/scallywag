@@ -26,7 +26,8 @@ def deployable_token(tokens):
 
 def deployable_job(u):
     return ((u.status == 'build succeeded') and
-            (u.reference == 'refs/heads/master') and
+            ((u.reference == 'refs/heads/master') or
+             (u.reference == 'refs/heads/main')) and
             (u.package != 'playground'))
 
 
