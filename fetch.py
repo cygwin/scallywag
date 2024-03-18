@@ -38,7 +38,6 @@ def fetch():
     incomplete = False
 
     with sqlite3.connect(carpetbag.dbfile) as conn:
-        scan = False
         c = conn.execute("SELECT id, user, arches, artifacts, backend FROM jobs WHERE status = 'fetching'")
 
         rows = c.fetchall()
@@ -91,7 +90,6 @@ def fetch():
                 # mark as ready for calm
                 if r.returncode == 0:
                     pathlib.Path(dest, '!ready').touch()
-                    scan = True
 
                 # remove tmpfile
                 os.remove(tmpfile.name)
@@ -100,18 +98,6 @@ def fetch():
                 conn.execute("UPDATE jobs SET status = 'deploying' WHERE id = ?", (buildid,))
 
     conn.close()
-
-    # signal calm to scan staging
-    if scan:
-        try:
-            pid = int(open('/sourceware/cygwin-staging/calm.pid').read())
-            try:
-                _LOGGER.info('signalled calm to scan staging area')
-                os.kill(pid, signal.SIGUSR1)
-            except ProcessLookupError:
-                pass
-        except FileNotFoundError:
-            pass
 
     return incomplete
 
