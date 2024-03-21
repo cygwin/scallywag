@@ -17,7 +17,7 @@ jobs:
     steps:
       - run: git config --global core.autocrlf input
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: cygwin/cygwin-install-action@master
         with:
@@ -47,7 +47,7 @@ jobs:
           BUILD: ${{ inputs.name }}
 
       - name: Upload scallywag metadata
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: 'metadata'
           path: scallywag.json
@@ -55,7 +55,7 @@ jobs:
 
       # upload builddir for possible investigation of problems
       - name: Upload builddir archive
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: '${{ inputs.name }} builddir'
           path: |
@@ -65,7 +65,7 @@ jobs:
 
       # on success, upload packages from staging
       - name: Upload packages
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: '${{ inputs.name }} packages'
           path: staging
