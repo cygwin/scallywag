@@ -41,7 +41,7 @@ def examine_run_artifacts(wfr_id, u):
         if a['name'] == 'metadata':
             url = a['archive_download_url']
             req = urllib.request.Request(url)
-            req.add_header('Authorization', 'Bearer ' + gh_token.fetch_iat())
+            req.add_unredirected_header('Authorization', 'Bearer ' + gh_token.fetch_iat())
 
             # occasionally, the metadata file is 404, despite appearing in the
             # list of artifacts. it seems we need to wait a little while after
@@ -49,7 +49,8 @@ def examine_run_artifacts(wfr_id, u):
             # again later.
             try:
                 response = urllib.request.urlopen(req)
-            except urllib.error.URLError:
+            except urllib.error.URLError as e:
+                logging.info("metadata download REST API response %s" % e)
                 break
 
             # fetch to a temporary file as zipfile needs to seek
@@ -83,3 +84,12 @@ def examine_run_artifacts(wfr_id, u):
     # if we couldn't retrieve, or didn't find the metadata file in the workflow
     # artifacts, try again later
     return found_metadata
+
+
+if __name__ == '__main__':
+    import sys
+    import types
+
+    u = types.SimpleNamespace()
+    examine_run_artifacts(sys.argv[1], u)
+    print(u)

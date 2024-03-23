@@ -63,14 +63,15 @@ def fetch():
                     req = urllib.request.Request(url)
 
                     if backend == 'github':
-                        req.add_header('Authorization', 'Bearer ' + gh_token.fetch_iat())
+                        req.add_unredirected_header('Authorization', 'Bearer ' + gh_token.fetch_iat())
 
                     _LOGGER.info('fetching %s' % url)
 
                     try:
                         with urllib.request.urlopen(req, timeout=60) as response:
                             shutil.copyfileobj(response, tmpfile)
-                    except (socket.timeout, urllib.error.URLError):
+                    except (socket.timeout, urllib.error.URLError) as e:
+                        logging.info("archive download response %s" % e)
                         incomplete = True
                         break
 
