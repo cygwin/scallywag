@@ -171,7 +171,7 @@ def main():
     context = daemon.DaemonContext(stdout=sys.stdout,
                                    stderr=sys.stderr,
                                    umask=0o002,
-                                   pidfile=lockfile.pidlockfile.PIDLockFile('/sourceware/cygwin-staging/scallywag-fetch.pid'))
+                                   pidfile=lockfile.pidlockfile.PIDLockFile('/sourceware/cygwin-staging/lock/scallywag-fetch.pid'))
 
     def sigterm(signum, frame):
         _LOGGER.debug("SIGTERM")
