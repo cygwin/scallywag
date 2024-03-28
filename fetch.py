@@ -65,7 +65,7 @@ def fetch():
                     if backend == 'github':
                         req.add_unredirected_header('Authorization', 'Bearer ' + gh_token.fetch_iat())
 
-                    _LOGGER.info('fetching %s' % url)
+                    _LOGGER.info('fetching %s to %s' % (url, tmpfile.name))
 
                     try:
                         with urllib.request.urlopen(req, timeout=60) as response:
@@ -75,11 +75,13 @@ def fetch():
                         incomplete = True
                         break
 
-                # close tmpfile
+                # context exit implicitly closes tmpfile
 
-                # unpack to staging area
-                dest = '/sourceware/cygwin-staging/staging/%s/%s/%s/release' % (buildid, user, arch)
-                os.makedirs(dest, exist_ok=True)
+                # unpack to temporary directory
+                tmpdir = '/sourceware/cygwin-staging/staging/tmp/'
+                os.makedirs(tmpdir, exist_ok=True)
+                dest = tempfile.mkdtemp(dir=tmpdir)
+
                 _LOGGER.info('unpacking to %s' % dest)
                 r = subprocess.run(['unzip', '-o', tmpfile.name, '-d', dest],
                                    stdout=subprocess.PIPE,
@@ -92,6 +94,19 @@ def fetch():
                 if r.returncode == 0:
                     pathlib.Path(dest, '!ready').touch()
 
+                # move to staging area
+                #
+                # (Making all the files appear atomically ensures that the
+                # !ready marker file appears synchronously with the directory.
+                #
+                # That greatly simplifies watching for changes on the staging
+                # directory - otherwise we would need to allow for the delay in
+                # establishing watches on the subdirectories to notice the
+                # marker file being created)
+                staging = '/sourceware/cygwin-staging/staging/%s/%s/%s/release' % (buildid, user, arch)
+                _LOGGER.info('moving to %s' % staging)
+                os.makedirs(staging, exist_ok=True)
+                os.rename(dest, staging)
                 # remove tmpfile
                 os.remove(tmpfile.name)
 
