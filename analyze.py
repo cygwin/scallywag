@@ -299,6 +299,7 @@ def depends_from_inherits(inherits):
             (['ruby'], ['ruby-devel']),
             (['tcl'], ['tcl-devel', 'tcl-tk-devel']),
             (['texlive'], ['texlive-collection-basic']),  # to ensure correct run-time dependency generation
+            (['wxwidgets'], ['libwx_baseu3.0-devel', 'libwx_gtk3u3.0-devel']),  # done correctly, this needs to understand WX_VERSION
             (['xfce4'], ['xfce4-dev-tools']),
             (['xorg'], ['xorg-util-macros']),
             (['xvfb'], ['xorg-server', 'xf86-video-dummy', 'xinit']),
