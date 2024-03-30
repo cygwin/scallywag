@@ -291,10 +291,15 @@ def depends_from_inherits(inherits):
             (['php'], ['php-devel', 'php-PEAR']),
             (['python2', 'python'], ['python2']),
             (['python2-distutils'], ['python2-setuptools', 'python2-devel']),
-            (['python2-wheel', 'python-wheel'], ['python2-wheel', 'python2-pip']),
+            (['python2-wheel'], ['python2-wheel', 'python2-pip']),
             (['python3'], ['python3']),
             (['python3-distutils'], ['python3-setuptools', 'python3-devel']),
-            (['python3-wheel', 'python-wheel'], ['python3-devel', 'python36-wheel', 'python36-pip', 'python37-wheel', 'python37-pip', 'python38-wheel', 'python38-pip', 'python39-wheel', 'python39-pip']),  # done correctly, this needs to understand PYTHON_WHEEL_VERSIONS
+            (['python3-wheel', 'python-wheel'],
+             ['python3-devel',
+              'python36-devel', 'python36-wheel', 'python36-pip',
+              'python37-devel', 'python37-wheel', 'python37-pip',
+              'python38-devel', 'python38-wheel', 'python38-pip',
+              'python39-devel', 'python39-wheel', 'python39-pip']),  # done correctly, this needs to understand PYTHON_WHEEL_VERSIONS
             (['qt5'], ['libQt5Core-devel', 'libQt5Gui-devel']),
             (['ruby'], ['ruby-devel']),
             (['tcl'], ['tcl-devel', 'tcl-tk-devel']),
