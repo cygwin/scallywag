@@ -28,7 +28,7 @@ on_finish:
 test: off
 notifications:
   provider: Webhook
-  url: http://cygwin.com/cgi-bin2/hook.cgi
+  url: https://cygwin.com/cgi-bin2/hook.cgi
   headers:
     Authorization:
       secure: r9DfPVTZOdxGpZzS/vm4Ew==
