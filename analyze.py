@@ -307,7 +307,7 @@ def depends_from_inherits(inherits):
             (['wxwidgets'], ['libwx_baseu3.0-devel', 'libwx_gtk3u3.0-devel']),  # done correctly, this needs to understand WX_VERSION
             (['xfce4'], ['xfce4-dev-tools']),
             (['xorg'], ['xorg-util-macros']),
-            (['xvfb'], ['xorg-server', 'xf86-video-dummy', 'xinit']),
+            (['xvfb'], ['xorg-server', 'xf86-video-dummy', 'xinit', 'xorg-server-extra']),
     ]:
         for i in pos:
             if i in inherits:
