@@ -194,6 +194,7 @@ def main():
 
     context.signal_map = {
         signal.SIGTERM: sigterm,
+        signal.SIGHUP: None,
     }
 
     with context:
