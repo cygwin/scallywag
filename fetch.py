@@ -107,6 +107,7 @@ def fetch():
                 _LOGGER.info('moving to %s' % staging)
                 os.makedirs(staging, exist_ok=True)
                 os.rename(dest, staging)
+
                 # remove tmpfile
                 os.remove(tmpfile.name)
 
@@ -159,8 +160,13 @@ def fetch_metadata():
 
 
 def process():
-    incomplete = fetch_metadata()
-    incomplete = fetch() or incomplete
+    try:
+        incomplete = fetch_metadata()
+        incomplete = fetch() or incomplete
+    except sqlite3.OperationalError as e:
+        _LOGGER.error(e)
+        incomplete = True
+
     return incomplete
 
 
