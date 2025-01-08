@@ -22,7 +22,7 @@ jobs:
       - uses: cygwin/cygwin-install-action@master
         with:
           platform: ${{ inputs.pkgarch }}
-          packages: cygport,git,lzip,python3
+          packages: cygport,git,lzip,python3,cygwin=3.5.4-1
 
       - name: Start cygserver
         run: |
