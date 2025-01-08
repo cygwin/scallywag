@@ -19,6 +19,13 @@ if __name__ == '__main__':
 
     maintainer = get_maintainer()
 
+    # only do something on package repositories
+    # (this hook should only be installed on them, but be safe...)
+    path, _ = os.path.split(repo)
+    _, dir = os.path.split(path)
+    if dir != 'cygwin-packages':
+        sys.exit(0)
+
     print('scallywag: invoked on repository {0}, by maintainer {1}'.format(repo, maintainer))
 
     tokens = ''
