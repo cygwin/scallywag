@@ -30,7 +30,7 @@ jobs:
           cygserver-config --yes
           cygrunsrv -S cygserver
           cygrunsrv -V -Q cygserver
-        shell: C:\cygwin\bin\bash.exe --noprofile --norc -o igncr -eo pipefail '{0}'
+        shell: D:\cygwin\bin\bash.exe --noprofile --norc -o igncr -eo pipefail '{0}'
         continue-on-error: true
 
       # some old x86 devel packages contain .la files, which can mess up builds
@@ -39,7 +39,7 @@ jobs:
           export PATH=/usr/bin:/usr/local/bin:$(cygpath ${SYSTEMROOT})/system32
           wget -q https://gist.githubusercontent.com/jon-turney/0338af595313f598bfab15a0ac0df847/raw/bd0eeca6be899e7846aa988fbcf15e4e12f5f842/zp_libtool_cleanlafiles.sh -O /etc/postinstall/zp_libtool_cleanlafiles.sh
           bash /etc/postinstall/zp_libtool_cleanlafiles.sh
-        shell: C:\cygwin\bin\bash.exe --noprofile --norc -o igncr -eo pipefail '{0}'
+        shell: D:\cygwin\bin\bash.exe --noprofile --norc -o igncr -eo pipefail '{0}'
         continue-on-error: true
 
       - name: Build packages
@@ -49,10 +49,10 @@ jobs:
         shell: bash --noprofile --norc -o igncr -eo pipefail '{0}'
         env:
           # knows too much about cygwin/cygwin-install-action internals
-          SETUP: C:\setup.exe
-          CYGWIN_ROOT: C:\cygwin
+          SETUP: D:\setup.exe
+          CYGWIN_ROOT: D:\cygwin
           CYGWIN_MIRROR: http://mirrors.kernel.org/sourceware/cygwin/
-          CACHE: C:\cygwin-packages
+          CACHE: D:\cygwin-packages
           BUILD: ${{ inputs.name }}
 
       - name: Upload scallywag metadata
