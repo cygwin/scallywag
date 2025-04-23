@@ -17,6 +17,8 @@ jobs:
     steps:
       - run: git config --global core.autocrlf input
 
+      - run: icacls .. /inheritance:r
+
       - uses: actions/checkout@v4
 
       - uses: cygwin/cygwin-install-action@master
