@@ -18,6 +18,7 @@ logging.basicConfig(format=os.path.basename(sys.argv[0]) + ': %(message)s')
 
 parser = argparse.ArgumentParser(description='scallywag')
 parser.add_argument('--inputs', dest='inputs', action='store', help='JSON encoded input parameters')
+parser.add_argument('--cross', dest='cross', action='store', help='Target arch when cross-compiling')
 args = parser.parse_args()
 
 if args.inputs:
@@ -78,7 +79,7 @@ else:
         sys.exit(1)
 
 # analyze the source
-package = analyze(workdir, default_tokens.split())
+package = analyze(workdir, default_tokens.split(), args.cross)
 
 if package.kind != 'cygport':
     logging.error('package analysis failed')
@@ -135,33 +136,43 @@ if 'nobuild' in package.tokens:
     logging.info('not building due to nobuild')
     sys.exit(0)
 
-setup_exe = subprocess.check_output(['cygpath', os.environ['SETUP']]).strip()
 
 if package.kind == 'cygport':
-    logging.info('installing build dependencies')
+    if 'SETUP' in os.environ:
+        logging.info('installing build dependencies')
 
-    setup_opts = []
-    if 'testpackages' in package.tokens:
-        setup_opts.append('-t')
+        setup_exe = subprocess.check_output(['cygpath', os.environ['SETUP']]).strip()
 
-    subprocess.check_call([setup_exe,
-                           '-q', '-n', '-O'] + setup_opts +
-                          ['-R', os.environ['CYGWIN_ROOT'],
-                           '-s', os.environ['CYGWIN_MIRROR'],
-                           '-l', os.environ['CACHE'],
-                           '-P', ','.join(package.depends)])
+        setup_opts = []
+        if 'testpackages' in package.tokens:
+            setup_opts.append('-t')
 
-    # preserve setup.log.full
-    shutil.move('/var/log/setup.log.full', os.path.join(mydir, 'setup.log.full'))
+        subprocess.check_call([setup_exe,
+                               '-q', '-n', '-O'] + setup_opts +
+                              ['-R', os.environ['CYGWIN_ROOT'],
+                               '-s', os.environ['CYGWIN_MIRROR'],
+                               '-l', os.environ['CACHE'],
+                               '-P', ','.join(package.depends)])
+
+        # preserve setup.log.full
+        shutil.move('/var/log/setup.log.full', os.path.join(mydir, 'setup.log.full'))
+    else:
+        logging.info('installation of build dependencies when crossbuilding (currently) unimplemented')
 
     # assemble the series of cygoprt subcommands for the build
     subcommands = []
+    opts = []
 
     if arch != 'source':
+        if args.cross:
+            opts.extend(['--arch', args.cross])
+
         # no separate source package stage on AppVeyor, so fetch upstream sources
         if 'APPVEYOR' in os.environ:
             subcommands.append('download')
 
+        # 'all' (prep/compile/install/package), or 'all-test' if label token is
+        # present, and then 'test'
         if 'label' in package.tokens:
             subcommands.append('all-test')
         else:
@@ -170,6 +181,7 @@ if package.kind == 'cygport':
         if 'notest' not in package.tokens:
             subcommands.append('test')
     else:
+        # 'download'; then 'srcpackage' (if we're making a source package)
         subcommands.append('download prep')
 
         if 'label' in package.tokens:
@@ -177,10 +189,13 @@ if package.kind == 'cygport':
         else:
             subcommands.append('srcpackage')
 
-    logging.info("running 'cygport %s'" % (' '.join(subcommands)))
-    rc = subprocess.call([os.path.join(mydir, 'build.sh'), package.script,
-                          'debug' if 'debug' in package.tokens else ''] +
-                         subcommands, stdin=subprocess.DEVNULL)
+    if 'debug' in package.tokens:
+        opts.append('--debug')
+
+    args = opts + [package.script] + subcommands
+    logging.info("running 'cygport %s'" % (' '.join(args)))
+    rc = subprocess.call([os.path.join(mydir, 'build.sh')] + args,
+                         stdin=subprocess.DEVNULL)
 
     # publish contents of dist as artifacts
     dist = glob.glob(os.path.join('*', 'dist'))

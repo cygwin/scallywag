@@ -1,0 +1,69 @@
+name: crossbuild
+on:
+  workflow_call:
+    inputs:
+      name:
+        required: true
+        type: string
+      pkgarch:
+        required: true
+        type: string
+
+jobs:
+  crossbuild:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+
+    steps:
+      # install build tools, and cross-cygwin toolchain and libs from copr
+      # (this is enough to cross-build the cygwin package, which is all this is expected to be used for)
+      - name: Install build tools
+        run: |
+          dnf install -y autoconf automake gawk git make patch perl
+          dnf install -y dnf-plugins-core
+          dnf copr enable -y @cygwin/cygwin
+          dnf install -y cygport cygwin${{ inputs.pkgarch }}-gcc-c++ cocom \
+          cygwin${{ inputs.pkgarch }}-gettext cygwin${{ inputs.pkgarch }}-libbfd \
+          cygwin${{ inputs.pkgarch }}-libiconv cygwin${{ inputs.pkgarch }}-zlib
+          dnf install -y dblatex docbook2X docbook-xsl xmlto python3 python3-lxml python3-ply
+          fmtutil-sys --byfmt pdflatex && texhash
+
+      - uses: actions/checkout@v7
+
+      - name: Download source package
+        uses: actions/download-artifact@v8
+        with:
+          name: 'source packages'
+          path: srcpkg
+        if: ${{ inputs.name != 'source' }}
+
+      - name: Build packages
+        run: |
+          ./scallywag --cross ${{ inputs.name }} --inputs '${{ github.event.inputs.payload }}'
+        env:
+          BUILD: ${{ inputs.name }}
+
+      - name: Upload scallywag metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: 'metadata'
+          path: scallywag.json
+        if: ${{ always() && inputs.name == 'source' }}
+
+      # upload builddir for possible investigation of problems
+      - name: Upload builddir archive
+        uses: actions/upload-artifact@v7
+        with:
+          name: '${{ inputs.name }} builddir'
+          path: |
+            builddir.tar.xz
+            setup.log.full
+        if: ${{ !cancelled() }}
+
+      # on success, upload packages from staging
+      - name: Upload packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: '${{ inputs.name }} packages'
+          path: staging
+          if-no-files-found: ignore

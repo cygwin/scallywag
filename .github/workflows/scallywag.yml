@@ -31,6 +31,16 @@ jobs:
 
     if: ${{ contains(needs.source.outputs.arches, 'x86_64') }}
 
+  aarch64:
+    needs: source
+
+    uses: ./.github/workflows/crossbuild.yml
+    with:
+      name: aarch64
+      pkgarch: '-aarch64'
+
+    if: ${{ contains(needs.source.outputs.arches, 'aarch64') }}
+
   noarch:
     needs: source
 

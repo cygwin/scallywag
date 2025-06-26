@@ -59,7 +59,7 @@ var_list = [
 var_values = {}
 
 
-def cygport_vars(fn):
+def cygport_vars(fn, cross):
     # there's an ordering problem with some cygclasses, which always check
     # for their prerequisites when included, irrespective of the cygport
     # sub-command being used, so 'vars' will fail when we use it to
@@ -76,7 +76,13 @@ def cygport_vars(fn):
 
     # extract interesting variables from cygport
     try:
-        result = subprocess.run(['cygport', fn, 'vars'] + var_list,
+        cmd = ['cygport']
+        if cross:
+            cmd.extend(['--arch', cross])
+        cmd.append(fn)
+        cmd.append('vars')
+
+        result = subprocess.run(cmd + var_list,
                                 check=True,
                                 capture_output=True,
                                 env=env)
@@ -173,7 +179,7 @@ def parse_cygport(fn):
 # analyze the source
 #
 
-def analyze(repodir, default_tokens):
+def analyze(repodir, default_tokens, cross):
     files = os.listdir(repodir)
     cygports = [m for m in files if re.search(r'\.cygport$', m)]
 
@@ -187,7 +193,7 @@ def analyze(repodir, default_tokens):
         fn = cygports[0]
         logging.info('source contains cygport %s' % fn)
 
-        if not cygport_vars(fn):
+        if not cygport_vars(fn, cross):
             # fallback to trying to parse the cygport (as previously)
             parse_cygport(os.path.join(repodir, fn))
 
