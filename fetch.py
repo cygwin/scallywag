@@ -50,9 +50,6 @@ def fetch():
             user = r[1]
             backend = r[4]
             for arch, art in zip(r[2].split(), r[3].split()):
-                if arch == 'source':
-                    continue
-
                 with tempfile.NamedTemporaryFile(delete=False) as tmpfile:
                     # fetch artifact to a tempfile
                     if art.startswith('http'):

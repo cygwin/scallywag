@@ -169,7 +169,7 @@ def parse_cygport(fn):
 
 
 #
-# analyze the source repository
+# analyze the source
 #
 
 def analyze(repodir, default_tokens):
@@ -178,13 +178,13 @@ def analyze(repodir, default_tokens):
 
     # more than one cygport!
     if len(cygports) > 1:
-        logging.error('repository contains multiple .cygport files')
+        logging.error('source contains multiple .cygport files')
         return PackageKind()
 
     # exactly one cygport file
     if len(cygports) == 1:
         fn = cygports[0]
-        logging.info('repository contains cygport %s' % fn)
+        logging.info('source contains cygport %s' % fn)
 
         if not cygport_vars(fn):
             # fallback to trying to parse the cygport (as previously)
@@ -248,13 +248,13 @@ def analyze(repodir, default_tokens):
         else:
             kind = 'g-b-s'
 
-        logging.info('repository contains a %s-style build script %s' % (kind, fn))
+        logging.info('source contains a %s-style build script %s' % (kind, fn))
         return PackageKind(kind=kind, script=fn)
     elif len(scripts) > 1:
-        logging.error('too many scripts in repository')
+        logging.error('too many scripts in source')
         return PackageKind()
 
-    logging.error("couldn't find build instructions in repository")
+    logging.error("couldn't find build instructions in source")
     return PackageKind()
 
 

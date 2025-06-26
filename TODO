@@ -1,9 +1,7 @@
 ## TODO
 
 - Do not build in subdir of scallywag checkout, to avoid 'git describe' potentially finding a scallywag .git dir
-- pass src pkg as an artifact to binary pkg jobs rather than using checkout
 - use a venv to avoid depending on user installation of required python modules
 - don't be terrible
-
 
 - fetcher should check if pending jobs have completed, in case we've missed a job conclusion status notification
