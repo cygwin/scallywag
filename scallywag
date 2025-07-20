@@ -179,7 +179,7 @@ if package.kind == 'cygport':
                 # since cygport currently lacks a command to produce the install
                 # package only, we use 'all' above and filter out the source
                 # package here
-                if 'APPVEYOR' not in os.environ:
+                if ('APPVEYOR' not in os.environ) and ('sepsrc' in package.tokens):
                     if ('-src.' in f) != (arch == 'source'):
                         os.remove(os.path.join(dirpath, f))
                         continue
