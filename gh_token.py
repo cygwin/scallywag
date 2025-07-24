@@ -73,7 +73,7 @@ def fetch_iat():
 
 
 def fetch_auth():
-    if os.environ['GITHUB_DEBUG_OWNER']:
+    if 'GITHUB_DEBUG_OWNER' in os.environ:
         owner = os.environ['GITHUB_DEBUG_OWNER']
 
         basedir = os.path.dirname(os.path.realpath(__file__))
