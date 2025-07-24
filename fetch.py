@@ -52,8 +52,10 @@ def fetch():
             tokens = r[5]
             for arch, art in zip(r[2].split(), r[3].split()):
                 with tempfile.NamedTemporaryFile(delete=False) as tmpfile:
-                    if (arch == 'source') and ('sepsrc' not in tokens):
-                        continue
+                    if arch == 'source':
+                        if 'sepsrc' not in tokens:
+                            continue
+                        arch = 'src'
 
                     # fetch artifact to a tempfile
                     if art.startswith('http'):
