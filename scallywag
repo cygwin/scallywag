@@ -71,7 +71,7 @@ else:
     try:
         logging.info('unpacking the source package')
         subprocess.check_call('tar -C %s --strip-components=1 -Jxvf %s' % (workdir,
-                                                                           os.path.join(mydir, 'srcpkg', name, name + '-*-src.tar.xz')),
+                                                                           os.path.join(mydir, 'srcpkg', '*', '*-*-src.tar.xz')),
                               shell=True)
     except (subprocess.CalledProcessError, FileNotFoundError):
         logging.info('something went wrong unpacking the source package')
