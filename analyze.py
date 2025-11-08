@@ -302,6 +302,7 @@ def depends_from_inherits(inherits):
               'python39-devel', 'python39-wheel', 'python39-pip']),  # done correctly, this needs to understand PYTHON_WHEEL_VERSIONS
             (['qt5'], ['libQt5Core-devel', 'libQt5Gui-devel']),
             (['ruby'], ['ruby-devel']),
+            (['rubygem'], ['rubygems']),
             (['tcl'], ['tcl-devel', 'tcl-tk-devel']),
             (['texlive'], ['texlive-collection-basic']),  # to ensure correct run-time dependency generation
             (['wxwidgets'], ['libwx_baseu3.0-devel', 'libwx_gtk3u3.0-devel']),  # done correctly, this needs to understand WX_VERSION
