@@ -162,7 +162,12 @@ if package.kind == 'cygport':
         if 'notest' not in package.tokens:
             subcommands.append('test')
     else:
-        subcommands.append('download prep srcpackage')
+        subcommands.append('download prep')
+
+        if 'label' in package.tokens:
+            subcommands.append('srcpackage-test')
+        else:
+            subcommands.append('srcpackage')
 
     logging.info("running 'cygport %s'" % (' '.join(subcommands)))
     rc = subprocess.call([os.path.join(mydir, 'build.sh'), package.script] +
