@@ -73,7 +73,7 @@ def deploy(id):
 
     # if deployable, update to 'fetching' status, irrespective of token
     if not carpetbag.deploy(u, force=True):
-        sys.exit("job id {} isn't deployable due to reference or package name restrictions".format(row['id']))
+        sys.exit("job id {} isn't deployable due to branch or package name restrictions".format(row['id']))
 
 
 def rerun(id, override_tokens):
