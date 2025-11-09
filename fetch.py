@@ -36,6 +36,7 @@ logging.getLogger('inotify.adapters').propagate = False
 
 def fetch():
     incomplete = False
+    trigger = False
 
     with sqlite3.connect(carpetbag.dbfile) as conn:
         c = conn.execute("SELECT id, user, arches, artifacts, backend FROM jobs WHERE status = 'fetching'")
@@ -92,6 +93,7 @@ def fetch():
                 # mark as ready for calm
                 if r.returncode == 0:
                     pathlib.Path(dest, '!ready').touch()
+                    trigger = True
 
                 # move to staging area
                 #
@@ -114,6 +116,10 @@ def fetch():
                 conn.execute("UPDATE jobs SET status = 'deploying' WHERE id = ?", (buildid,))
 
     conn.close()
+
+    # wake calm to process staging
+    if trigger:
+        pathlib.Path('/sourceware/cygwin-staging/staging/', '!ready').touch()
 
     return incomplete
 
