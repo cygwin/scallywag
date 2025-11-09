@@ -38,7 +38,7 @@ def fetch():
     incomplete = False
 
     with sqlite3.connect(carpetbag.dbfile) as conn:
-        c = conn.execute("SELECT id, user, arches, artifacts, backend, tokens FROM jobs WHERE status = 'fetching'")
+        c = conn.execute("SELECT id, user, arches, artifacts, backend FROM jobs WHERE status = 'fetching'")
 
         rows = c.fetchall()
 
@@ -49,14 +49,10 @@ def fetch():
             buildid = r[0]
             user = r[1]
             backend = r[4]
-            tokens = r[5]
             for arch, art in zip(r[2].split(), r[3].split()):
                 with tempfile.NamedTemporaryFile(delete=False) as tmpfile:
                     if arch == 'source':
-                        if 'sepsrc' not in tokens:
-                            continue
                         arch = 'src'
-
                     # fetch artifact to a tempfile
                     if art.startswith('http'):
                         url = art
