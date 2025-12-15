@@ -54,6 +54,7 @@ var_list = [
     'RESTRICT',
     'SCALLYWAG',
     'ANNOUNCE',
+    'PYTHON_WHEEL_VERSIONS',
 ]
 var_values = {}
 
@@ -231,6 +232,8 @@ def analyze(repodir, default_tokens):
 
         depends.update(depends_from_inherits(inherited))
 
+        generalize_python_depends(depends, get_var('PYTHON_WHEEL_VERSIONS', ''))
+
         announce = get_var('ANNOUNCE', '')
 
         return PackageKind(kind='cygport', script=fn, depends=depends, arches=arches, tokens=tokens, announce=announce)
@@ -348,6 +351,27 @@ def depends_from_depend(depend):
             build_deps.add(atom)
 
     return build_deps
+
+
+#
+# Turn 'python3-foo' build requirement into a set of 'python3n-foo' requirements
+# (where the values of n are in PYTHON_WHEEL_VERSIONS), to allow BUILD_REQUIRES
+# to be written more generically
+#
+
+def generalize_python_depends(depends, python_wheel_versions):
+    add = []
+    for atom in depends:
+        match = re.match(r'^python3-(.*)$', atom)
+        if match:
+            gen_atom = []
+            for v in python_wheel_versions.split(':'):
+                gen_atom.append('python' + v.replace('.', '') + '-' + match.group(1))
+
+            logging.info('generalizing %s to %s' % (atom, gen_atom))
+            add += gen_atom
+
+    depends.update(add)
 
 
 #
