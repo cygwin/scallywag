@@ -299,7 +299,9 @@ def depends_from_inherits(inherits):
               'python36-devel', 'python36-wheel', 'python36-pip',
               'python37-devel', 'python37-wheel', 'python37-pip',
               'python38-devel', 'python38-wheel', 'python38-pip',
-              'python39-devel', 'python39-wheel', 'python39-pip']),  # done correctly, this needs to understand PYTHON_WHEEL_VERSIONS
+              'python39-devel', 'python39-wheel', 'python39-pip',
+              'python312-devel', 'python312-wheel', 'python312-pip',
+              ]),  # done correctly, this needs to understand PYTHON_WHEEL_VERSIONS
             (['qt5'], ['libQt5Core-devel', 'libQt5Gui-devel']),
             (['ruby'], ['ruby-devel']),
             (['rubygem'], ['rubygems']),
