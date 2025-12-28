@@ -119,7 +119,7 @@ def fetch():
 
     # wake calm to process staging
     if trigger:
-        pathlib.Path('/sourceware/cygwin-staging/staging/', '!ready').touch()
+        pathlib.Path('/sourceware/cygwin-staging/staging/', '.touch').touch()
 
     return incomplete
 
