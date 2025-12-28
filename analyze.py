@@ -306,7 +306,7 @@ def depends_from_inherits(inherits):
               'python312-devel', 'python312-wheel', 'python312-pip',
               ]),  # done correctly, this needs to understand PYTHON_WHEEL_VERSIONS
             (['qt5'], ['libQt5Core-devel', 'libQt5Gui-devel']),
-            (['ruby'], ['ruby-devel']),
+            (['ruby'], ['ruby-devel', 'rubygems']),
             (['rubygem'], ['rubygems']),
             (['tcl'], ['tcl-devel', 'tcl-tk-devel']),
             (['texlive'], ['texlive-collection-basic']),  # to ensure correct run-time dependency generation
