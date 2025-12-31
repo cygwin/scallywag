@@ -1,37 +1,22 @@
 #!/usr/bin/env python3
 #
-# process to fetch and deploy build artifacts from appveyor
+# fetch and deploy build artifacts
 #
 
-import daemon
 import logging
 import logging.handlers
 import os
 import pathlib
-import pidlockfile
 import shutil
-import signal
 import socket
 import sqlite3
 import subprocess
-import sys
 import tempfile
-import time
 import urllib.request
-
-try:
-    import inotify.adapters
-    has_inotify = True
-except ImportError:
-    has_inotify = False
 
 import carpetbag
 import gh
 import gh_token
-
-
-_LOGGER = logging.getLogger(__name__)
-logging.getLogger('inotify.adapters').propagate = False
 
 
 def fetch():
@@ -44,7 +29,7 @@ def fetch():
         rows = c.fetchall()
 
         if len(rows) > 0:
-            _LOGGER.info('%d rows ready for fetching' % len(rows))
+            logging.info('%d rows ready for fetching' % len(rows))
 
         for r in rows:
             buildid = r[0]
@@ -65,7 +50,7 @@ def fetch():
                     if backend == 'github':
                         req.add_unredirected_header('Authorization', 'Bearer ' + gh_token.fetch_iat())
 
-                    _LOGGER.info('fetching %s to %s' % (url, tmpfile.name))
+                    logging.info('fetching %s to %s' % (url, tmpfile.name))
 
                     try:
                         with urllib.request.urlopen(req, timeout=60) as response:
@@ -82,13 +67,13 @@ def fetch():
                 os.makedirs(tmpdir, exist_ok=True)
                 dest = tempfile.mkdtemp(dir=tmpdir)
 
-                _LOGGER.info('unpacking to %s' % dest)
+                logging.info('unpacking to %s' % dest)
                 r = subprocess.run(['unzip', '-o', tmpfile.name, '-d', dest],
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT)
 
                 for l in r.stdout.decode('utf-8').splitlines():
-                    _LOGGER.info('unzip: %s' % l)
+                    logging.info('unzip: %s' % l)
 
                 # mark as ready for calm
                 if r.returncode == 0:
@@ -105,7 +90,7 @@ def fetch():
                 # establishing watches on the subdirectories to notice the
                 # marker file being created)
                 staging = '/sourceware/cygwin-staging/staging/%s/%s/%s/release' % (buildid, user, arch)
-                _LOGGER.info('moving to %s' % staging)
+                logging.info('moving to %s' % staging)
                 os.makedirs(staging, exist_ok=True)
                 os.rename(dest, staging)
 
@@ -132,7 +117,7 @@ def fetch_metadata():
         rows = c.fetchall()
 
         if len(rows) > 0:
-            _LOGGER.info('%d rows ready for fetching metadata' % len(rows))
+            logging.info('%d rows ready for fetching metadata' % len(rows))
 
         for r in rows:
             buildid = r[0]
@@ -150,7 +135,7 @@ def fetch_metadata():
             if gh.examine_run_artifacts(backend_id, u):
                 carpetbag.update_metadata(u)
             else:
-                _LOGGER.info("fetching metadata for %s failed, will retry later" % buildid)
+                logging.info("fetching metadata for %s failed, will retry later" % buildid)
                 # if examine_run_artifacts fails, we'll try again later
                 incomplete = True
 
@@ -169,77 +154,7 @@ def process():
         incomplete = fetch_metadata()
         incomplete = fetch() or incomplete
     except sqlite3.OperationalError as e:
-        _LOGGER.error(e)
+        logging.error(e)
         incomplete = True
 
     return incomplete
-
-
-def logging_setup():
-    # setup logging to a file
-    rfh = logging.handlers.TimedRotatingFileHandler('/sourceware/cygwin-staging/logs/scallywag-fetch.log', backupCount=48, when='midnight')
-    rfh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)-8s - %(message)s'))
-    rfh.setLevel(logging.DEBUG)
-    _LOGGER.addHandler(rfh)
-
-    # setup logging to stdout
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setFormatter(logging.Formatter(os.path.basename(sys.argv[0]) + ': %(message)s'))
-    ch.setLevel(logging.INFO)
-    _LOGGER.addHandler(ch)
-
-    # turn off filtering on level in root logger (which defaults to WARNING, and
-    # which all non-root loggers delegate to by default)
-    logging.getLogger().setLevel(logging.NOTSET)
-
-
-def main():
-    context = daemon.DaemonContext(stdout=sys.stdout,
-                                   stderr=sys.stderr,
-                                   umask=0o002,
-                                   pidfile=pidlockfile.PIDLockFile('/sourceware/cygwin-staging/lock/scallywag-fetch.pid'))
-
-    def sigterm(signum, frame):
-        _LOGGER.debug("SIGTERM")
-        context.terminate(signum, frame)
-
-    context.signal_map = {
-        signal.SIGTERM: sigterm,
-        signal.SIGHUP: None,
-    }
-
-    with context:
-        logging_setup()
-        _LOGGER.info("scallywag-fetch daemon started, pid %d" % (os.getpid()))
-        _LOGGER.info('has_inotify %s' % has_inotify)
-
-        try:
-            incomplete = True
-            # wake when db is changed, or periodically if we have incompletely
-            # processed changes
-            while True:
-                if has_inotify and not incomplete:
-                    i = inotify.adapters.Inotify()
-
-                    i.add_watch(carpetbag.dbfile)
-                    for event in i.event_gen(yield_nones=False):
-                        (_, type_names, path, filename) = event
-                        if 'IN_CLOSE_WRITE' in type_names:
-                            # remove watch so we don't see events generated by
-                            # our own changes
-                            i.remove_watch(carpetbag.dbfile)
-                            incomplete = process()
-                            break
-
-                else:
-                    incomplete = process()
-                    time.sleep(60)
-
-        except Exception as e:
-            _LOGGER.error("exception %s" % (type(e).__name__), exc_info=True)
-
-    _LOGGER.info("scallywag-fetch daemon stopped")
-
-
-if __name__ == '__main__':
-    main()
