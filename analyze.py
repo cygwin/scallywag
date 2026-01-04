@@ -236,6 +236,8 @@ def analyze(repodir, default_tokens):
 
         announce = get_var('ANNOUNCE', '')
 
+        logging.info('build dependencies (complete): %s' % (','.join(sorted(depends))))
+
         return PackageKind(kind='cygport', script=fn, depends=depends, arches=arches, tokens=tokens, announce=announce)
 
     # if there's no cygport file, we look for a g-b-s style .sh file instead
@@ -297,14 +299,7 @@ def depends_from_inherits(inherits):
             (['python2-wheel'], ['python2-wheel', 'python2-pip']),
             (['python3'], ['python3']),
             (['python3-distutils'], ['python3-setuptools', 'python3-devel']),
-            (['python3-wheel', 'python-wheel'],
-             ['python3-devel',
-              'python36-devel', 'python36-wheel', 'python36-pip',
-              'python37-devel', 'python37-wheel', 'python37-pip',
-              'python38-devel', 'python38-wheel', 'python38-pip',
-              'python39-devel', 'python39-wheel', 'python39-pip',
-              'python312-devel', 'python312-wheel', 'python312-pip',
-              ]),  # done correctly, this needs to understand PYTHON_WHEEL_VERSIONS
+            (['python3-wheel', 'python-wheel'], ['python3-devel']),  # plus see below under PYTHON_WHEEL_VERSIONS
             (['qt5'], ['libQt5Core-devel', 'libQt5Gui-devel']),
             (['ruby'], ['ruby-devel', 'rubygems']),
             (['rubygem'], ['rubygems']),
@@ -318,6 +313,13 @@ def depends_from_inherits(inherits):
         for i in pos:
             if i in inherits:
                 build_deps.update(deps)
+
+    # Add 'python3x-devel', 'python3x-wheel' and 'python3x-pip' for all 3.x in PYTHON_WHEEL_VERSIONS
+    if 'python-wheel' in inherits:
+        python_wheel_versions = get_var('PYTHON_WHEEL_VERSIONS', '')
+        for v in python_wheel_versions.split(':'):
+            for d in ['devel', 'wheel', 'pip']:
+                build_deps.add('python' + v.replace('.', '') + '-' + d)
 
     # if it uses autotools, it will want pkg-config
     if ('autotools' in inherits) or (len(inherits) == 0):
@@ -355,13 +357,12 @@ def depends_from_depend(depend):
 
 #
 # Turn 'python3-foo' build requirement into a set of 'python3n-foo' requirements
-# (where the values of n are in PYTHON_WHEEL_VERSIONS), to allow BUILD_REQUIRES
+# (where the values of 3.n are in PYTHON_WHEEL_VERSIONS), to allow BUILD_REQUIRES
 # to be written more generically
 #
 
 def generalize_python_depends(depends, python_wheel_versions):
-    add = []
-    for atom in depends:
+    for atom in list(depends):
         match = re.match(r'^python3-(.*)$', atom)
         if match:
             gen_atom = []
@@ -369,9 +370,7 @@ def generalize_python_depends(depends, python_wheel_versions):
                 gen_atom.append('python' + v.replace('.', '') + '-' + match.group(1))
 
             logging.info('generalizing %s to %s' % (atom, gen_atom))
-            add += gen_atom
-
-    depends.update(add)
+            depends.update(gen_atom)
 
 
 #
