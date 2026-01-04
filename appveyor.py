@@ -18,6 +18,10 @@ class Backend():
         buildurl = None
         return bbid, buildurl
 
+    @staticmethod
+    def check_build_status(bbid):
+        return _appveyor_check_status(bbid)
+
 
 def _appveyor_build_request(package, maintainer, commit, reference, default_tokens, buildnumber):
     slug = 'scallywag'
@@ -56,3 +60,7 @@ def _appveyor_build_request(package, maintainer, commit, reference, default_toke
 
     j = json.loads(response.read().decode('utf-8'))
     return j['buildId']
+
+
+def _appveyor_check_status(bbid):
+    return None

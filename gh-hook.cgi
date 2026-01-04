@@ -5,23 +5,15 @@ import hashlib
 import hmac
 import json
 import os
-import re
 import sys
-import time
 import traceback
 
 import carpetbag
+import gh
 
 
 basedir = os.path.dirname(os.path.realpath(__file__))
 secretfile = os.path.join(basedir, 'secret')
-
-
-def parse_iso8601_time(s):
-    time_format = '%Y-%m-%dT%H:%M:%SZ'  # e.g. "2021-05-27T20:38:23Z"
-    st = time.strptime(s, time_format)
-    t = time.mktime(st)
-    return int(t)
 
 
 def process(data):
@@ -29,6 +21,7 @@ def process(data):
     with open(os.path.join(basedir, 'last.json'), 'w') as f:
         print(json.dumps(j, sort_keys=True, indent=4), file=f)
 
+    # XXX: also handle 'requested', 'in_progress'
     if j.get('action', '') != 'completed':
         return None
 
@@ -40,26 +33,7 @@ def process(data):
     if not wfr:
         return None
 
-    u = carpetbag.Update()
-
-    u.backend_id = wfr['id']
-    u.buildurl = wfr['html_url']
-    u.duration = parse_iso8601_time(wfr['updated_at']) - parse_iso8601_time(wfr['created_at'])
-
-    # extract build_id from the title
-    title = wfr['display_title']
-    match = re.search(r'\((.*)\)', title)
-    if match:
-        u.buildnumber = int(match.group(1))
-
-    if wfr['conclusion'] == 'success':
-        u.status = 'build succeeded'
-    elif wfr['conclusion'] == 'cancelled':
-        u.status = 'cancelled'
-    else:
-        u.status = 'build failed'
-
-    return u
+    return gh._process_wfr(wfr)
 
 
 def hook():

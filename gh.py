@@ -13,6 +13,7 @@ import urllib.error
 import urllib.request
 import zipfile
 
+import carpetbag
 import gh_token
 
 
@@ -26,6 +27,10 @@ class Backend():
         with locked():
             bbid, buildurl = _github_workflow_trigger(package, maintainer, commit, reference, default_tokens, buildnumber)
         return bbid, buildurl
+
+    @staticmethod
+    def check_build_status(bbid):
+        return _github_check_status(bbid)
 
 
 @contextlib.contextmanager
@@ -64,7 +69,7 @@ def _github_most_recent_wfr_id():
     status = response.getcode()
     logging.info("runs REST API status %s" % status)
     if status != 200:
-        print('scallywag: GitHub REST API failed status %s' % (status))
+        logging.error('scallywag: GitHub REST API failed status %s' % (status))
         return 0, None
 
     resp = response.read().decode('utf-8')
@@ -168,6 +173,61 @@ def _github_workflow_cancel(wfr_id):
     status = response.getcode()
     if status != 202:
         print('scallywag: GitHub REST API failed status %s' % (status))
+
+
+def _github_check_status(wfr_id):
+    (owner, token) = gh_token.fetch_auth()
+    req = urllib.request.Request('https://api.github.com/repos/{}/scallywag/actions/runs/{}'.format(owner, wfr_id))
+
+    req.add_header('Accept', 'application/vnd.github.v3+json')
+    req.add_header('Authorization', 'Bearer ' + token)
+
+    try:
+        response = urllib.request.urlopen(req)
+    except urllib.error.URLError as e:
+        response = e
+
+    status = response.getcode()
+    if status != 200:
+        logging.error('scallywag: GitHub REST API failed status %s' % (status))
+        return None
+
+    j = json.loads(response.read().decode('utf-8'))
+
+    return process_wfr(j)
+
+
+def process_wfr(wfr):
+    u = carpetbag.Update()
+
+    u.backend_id = wfr['id']
+    u.buildurl = wfr['html_url']
+    u.duration = parse_iso8601_time(wfr['updated_at']) - parse_iso8601_time(wfr['created_at'])
+
+    # extract build_id from the title
+    title = wfr['display_title']
+    match = re.search(r'\((.*)\)', title)
+    if match:
+        u.buildnumber = int(match.group(1))
+
+    if wfr['conclusion'] == 'success':
+        u.status = 'build succeeded'
+    elif wfr['conclusion'] == 'cancelled':
+        u.status = 'cancelled'
+    else:
+        # action_required, failure, neutral, skipped, stale, timed_out, startup_failure, null
+        u.status = 'build failed'
+
+    logging.info('github, backend_id: %d, status: %s' % (u.backend_id, u.status))
+
+    return u
+
+
+def parse_iso8601_time(s):
+    time_format = '%Y-%m-%dT%H:%M:%SZ'  # e.g. "2021-05-27T20:38:23Z"
+    st = time.strptime(s, time_format)
+    t = time.mktime(st)
+    return int(t)
 
 
 def examine_run_artifacts(wfr_id, u):
