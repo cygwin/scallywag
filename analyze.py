@@ -230,7 +230,7 @@ def analyze(repodir, default_tokens):
             for tool in ['binutils', 'gcc-core', 'gcc-g++', 'pkg-config']:
                 depends.add('%s%s' % (pkg_prefix, tool))
 
-        depends.update(depends_from_inherits(inherited))
+        depends.update(depends_from_inherits(inherited, tokens))
 
         generalize_python_depends(depends, get_var('PYTHON_WHEEL_VERSIONS', ''))
 
@@ -276,7 +276,7 @@ cross_package_prefixes = {
 }
 
 
-def depends_from_inherits(inherits):
+def depends_from_inherits(inherits, tokens):
     build_deps = set()
 
     logging.info('cygport inherits: %s' % ','.join(sorted(inherits)))
@@ -294,10 +294,7 @@ def depends_from_inherits(inherits):
             (['ocaml'], ['ocaml', 'flexdll']),
             (['perl'], ['perl']),
             (['php'], ['php-devel', 'php-PEAR']),
-            (['python2', 'python'], ['python2']),
-            (['python2-distutils'], ['python2-setuptools', 'python2-devel']),
-            (['python2-wheel'], ['python2-wheel', 'python2-pip']),
-            (['python3'], ['python3']),
+            (['python3'], ['python3', 'python3-devel']),
             (['python3-distutils'], ['python3-setuptools', 'python3-devel']),
             (['python3-wheel', 'python-wheel'], ['python3-devel']),  # plus see below under PYTHON_WHEEL_VERSIONS
             (['qt5'], ['libQt5Core-devel', 'libQt5Gui-devel']),
@@ -315,8 +312,9 @@ def depends_from_inherits(inherits):
                 build_deps.update(deps)
 
     # Add 'python3x-devel', 'python3x-wheel' and 'python3x-pip' for all 3.x in PYTHON_WHEEL_VERSIONS
-    if 'python-wheel' in inherits:
-        python_wheel_versions = get_var('PYTHON_WHEEL_VERSIONS', '')
+    if ('python-wheel' in inherits) or ('python3' in inherits):
+        default_wheel_versions = '3.12' if 'testpackages' in tokens else '3.9'
+        python_wheel_versions = get_var('PYTHON_WHEEL_VERSIONS', default_wheel_versions)
         for v in python_wheel_versions.split(':'):
             for d in ['devel', 'wheel', 'pip']:
                 build_deps.add('python' + v.replace('.', '') + '-' + d)
@@ -362,6 +360,9 @@ def depends_from_depend(depend):
 #
 
 def generalize_python_depends(depends, python_wheel_versions):
+    if not python_wheel_versions:
+        return
+
     for atom in list(depends):
         match = re.match(r'^python3-(.*)$', atom)
         if match:
