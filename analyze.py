@@ -232,7 +232,7 @@ def analyze(repodir, default_tokens):
 
         depends.update(depends_from_inherits(inherited, tokens))
 
-        generalize_python_depends(depends, get_var('PYTHON_WHEEL_VERSIONS', ''))
+        generalize_python_depends(depends, tokens)
 
         announce = get_var('ANNOUNCE', '')
 
@@ -359,7 +359,10 @@ def depends_from_depend(depend):
 # to be written more generically
 #
 
-def generalize_python_depends(depends, python_wheel_versions):
+def generalize_python_depends(depends, tokens):
+    default_wheel_versions = '3.12' if 'testpackages' in tokens else '3.9'
+    python_wheel_versions = get_var('PYTHON_WHEEL_VERSIONS', default_wheel_versions)
+
     if not python_wheel_versions:
         return
 
