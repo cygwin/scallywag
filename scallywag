@@ -101,6 +101,10 @@ else:
     logging.info('arch(es) to build for could not be determined')
     sys.exit(1)
 
+if 'GITHUB_OUTPUT' in os.environ:
+    with open(os.environ['GITHUB_OUTPUT'], 'w') as f:
+        print('arches="%s"' % (' '.join(package.arches)), file=f)
+
 data_items = {
     'BUILDNUMBER': buildnumber,
     'PACKAGE': name,

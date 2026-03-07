@@ -19,9 +19,13 @@ jobs:
     with:
       name: x86_64
 
+    if: ${{ contains(needs.source.outputs.arches, 'x86_64') }}
+
   noarch:
     needs: source
 
     uses: ./.github/workflows/build.yml
     with:
       name: noarch
+
+    if: ${{ contains(needs.source.outputs.arches, 'noarch') }}
