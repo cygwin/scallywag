@@ -210,15 +210,18 @@ def process_wfr(wfr):
     if match:
         u.buildnumber = int(match.group(1))
 
-    if wfr['conclusion'] == 'success':
+    conclusion = wfr['conclusion']
+    if conclusion is None:  # no conclusion => still running
+        u.status = 'pending'
+    elif conclusion == 'success':
         u.status = 'build succeeded'
-    elif wfr['conclusion'] == 'cancelled':
+    elif conclusion == 'cancelled':
         u.status = 'cancelled'
     else:
-        # action_required, failure, neutral, skipped, stale, timed_out, startup_failure, null
+        # action_required, failure, neutral, skipped, stale, timed_out, startup_failure
         u.status = 'build failed'
 
-    logging.info('github, backend_id: %d, status: %s' % (u.backend_id, u.status))
+    logging.info('github, backend_id: %d, conclusion: %s -> status: %s' % (u.backend_id, conclusion, u.status))
 
     return u
 
