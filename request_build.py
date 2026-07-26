@@ -60,27 +60,27 @@ def request_build(commit, reference, package, maintainer, tokens=''):
 
     # select backend
     if 'appveyor' in default_tokens:
-        backend = 'appveyor'
+        backend_name = 'appveyor'
     else:
-        backend = 'github'
+        backend_name = 'github'
 
     # request job
-    backend = backends.lookup_by_name(backend)
+    backend = backends.lookup_by_name(backend_name)
     if backend:
-        bbid, buildurl = backend.request_build()
+        bbid, buildurl = backend.request_build(package, maintainer, commit, reference, default_tokens, buildnumber)
 
     # an error occurred requesting the job
     if bbid < 0:
-        print('scallywag: error queuing build {0} on {1}'.format(buildnumber, backend))
+        print('scallywag: error queuing build {0} on {1}'.format(buildnumber, backend_name))
         return
 
-    print('scallywag: build {0} queued on {1}'.format(buildnumber, backend))
+    print('scallywag: build {0} queued on {1}'.format(buildnumber, backend_name))
     print('scallywag: https://cygwin.com/cgi-bin2/jobs.cgi?id={0}'.format(buildnumber))
 
     # record job as pending
     with sqlite3.connect(carpetbag.dbfile) as conn:
         conn.execute('UPDATE jobs SET status = ?, logurl = ?, backend = ?, backend_id = ? WHERE id = ?',
-                     ('pending', buildurl, backend, bbid, buildnumber))
+                     ('pending', buildurl, backend_name, bbid, buildnumber))
         conn.commit()
     conn.close()
 
