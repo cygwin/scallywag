@@ -33,7 +33,7 @@ def process(data):
     if not wfr:
         return None
 
-    return gh._process_wfr(wfr)
+    return gh.process_wfr(wfr)
 
 
 def hook():
