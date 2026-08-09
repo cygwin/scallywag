@@ -80,6 +80,10 @@ else:
 # analyze the source
 package = analyze(workdir, default_tokens.split())
 
+if package.kind != 'cygport':
+    logging.error('package analysis failed')
+    sys.exit(1)
+
 # compare target arch(es) and build environment
 logging.info('build ARCH: %s, cygport ARCHes: %s' % (arch, package.arches))
 
