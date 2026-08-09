@@ -224,11 +224,11 @@ def analyze(repodir, default_tokens):
             pkg_prefix = cross_package_prefixes.get(cross_host, '')
             if not pkg_prefix:
                 logging.error('cross_host: %s, pkg_prefix is unknown' % (cross_host))
-                return PackageKind()
-            logging.info('cross_host: %s, pkg_prefix: %s' % (cross_host, pkg_prefix))
+            else:
+                logging.info('cross_host: %s, pkg_prefix: %s' % (cross_host, pkg_prefix))
 
-            for tool in ['binutils', 'gcc-core', 'gcc-g++', 'pkg-config']:
-                depends.add('%s%s' % (pkg_prefix, tool))
+                for tool in ['binutils', 'gcc-core', 'gcc-g++', 'pkg-config']:
+                    depends.add('%s%s' % (pkg_prefix, tool))
 
         depends.update(depends_from_inherits(inherited, tokens))
 
