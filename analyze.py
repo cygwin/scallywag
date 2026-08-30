@@ -313,7 +313,7 @@ def depends_from_inherits(inherits, tokens):
 
     # Add 'python3x-devel', 'python3x-wheel' and 'python3x-pip' for all 3.x in PYTHON_WHEEL_VERSIONS
     if ('python-wheel' in inherits) or ('python3' in inherits):
-        default_wheel_versions = '3.12' if 'testpackages' in tokens else '3.9'
+        default_wheel_versions = '3.12'
         python_wheel_versions = get_var('PYTHON_WHEEL_VERSIONS', default_wheel_versions)
         for v in python_wheel_versions.split(':'):
             for d in ['devel', 'wheel', 'pip']:
@@ -360,7 +360,7 @@ def depends_from_depend(depend):
 #
 
 def generalize_python_depends(depends, tokens):
-    default_wheel_versions = '3.12' if 'testpackages' in tokens else '3.9'
+    default_wheel_versions = '3.12'
     python_wheel_versions = get_var('PYTHON_WHEEL_VERSIONS', default_wheel_versions)
 
     if not python_wheel_versions:
