@@ -24,6 +24,7 @@
 import cgi
 import cgitb
 import datetime
+import re
 import sqlite3
 import textwrap
 from urllib.parse import urlencode
@@ -139,11 +140,16 @@ def results(parse):
             else:
                 return 'normal'
 
+        def filenameify(m):
+            return 'maintainer_' + re.sub(r'[ .]', r'_', m.lower()) + '.html'
+
+        usernamelink = '<a href="https://cygwin.com/packages/reports/%s">%s</a>' % (filenameify(username), username)
+
         result += textwrap.dedent('''<td>%d</td>
                                      <td>%s</td>
                                      <td class="%s">%s</td>
                                      <td>%s</td>
-                                     <td><a href="%s">%s</a></td>''') % (jobid, srcpkglink, status_to_class(status), status, username, commiturl, shorthash)
+                                     <td><a href="%s">%s</a></td>''') % (jobid, srcpkglink, status_to_class(status), status, usernamelink, commiturl, shorthash)
 
         if ref:
             ref = ref.replace('refs/heads/', '')
