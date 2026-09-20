@@ -38,6 +38,18 @@ def request_build(commit, reference, package, maintainer, tokens=''):
     except FileNotFoundError:
         pass
 
+    # (temporarily) enable aarch64 build for whitelisted packages only
+    try:
+        with open('/www/sourceware/htdocs/cygwin/aarch64_whitelist') as f:
+            for l in f.readlines():
+                if l.startswith('#'):
+                    continue
+                if l.strip() == package:
+                    default_tokens = default_tokens + ' ' + 'aarch64'
+                    break
+    except FileNotFoundError:
+        pass
+
     if tokens:
         default_tokens = default_tokens + ' ' + tokens
 

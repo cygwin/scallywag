@@ -215,9 +215,13 @@ def analyze(repodir, default_tokens, cross):
 
         # detect if there is an ARCH line
         arches = get_var('ARCHES')
-        if arches == 'all':
-            arches = 'x86_64'
-        arches = arches.split()
+        if arches != 'all':
+            arches = arches.split()
+        else:
+            if aarch64_whitelist(tokens):
+                arches = ['x86_64', 'aarch64']
+            else:
+                arches = ['x86_64']
 
         # some 'inherit's imply ARCH=noarch
         inherited = get_var('INHERITED').split()
@@ -381,6 +385,17 @@ def generalize_python_depends(depends, tokens):
 
             logging.info('generalizing %s to %s' % (atom, gen_atom))
             depends.update(gen_atom)
+
+
+#
+# For the moment, we only try aarch64 builds for ARCHES="all" packages for the
+# specific package on a whitelist.
+#
+# To save having to access the whitelist here, instead is processed during
+# request_build and the token 'aarch64' is added if the package is on it.
+#
+def aarch64_whitelist(tokens):
+    return 'aarch64' in tokens
 
 
 #
