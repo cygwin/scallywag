@@ -65,7 +65,7 @@ jobs:
         id: scallywag
         run: |
           export PATH=/usr/bin:/usr/local/bin:$(cygpath ${SYSTEMROOT})/system32
-          ./scallywag --inputs '${{ toJson(github.event.client_payload) }}'
+          ./scallywag --inputs '${{ github.event.inputs.payload }}'
         shell: bash --noprofile --norc -o igncr -eo pipefail '{0}'
         env:
           SETUP: ${{ steps.cygwin-install.outputs.setup }}

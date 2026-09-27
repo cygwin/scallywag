@@ -1,6 +1,16 @@
 name: scallywag
+
 on:
-  - repository_dispatch
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: json-encoded payload
+        required: true
+      title:
+        description: title in UI
+        required: true
+
+run-name: "${{ inputs.title }}"
 
 # set restricted permissions for GITHUB_TOKEN
 permissions:

@@ -48,77 +48,33 @@ def locked():
         lockfile.close()
 
 
-def _github_most_recent_wfr_id():
-    data = {
-        "event": "repository_dispatch",
-        "per_page": 1
-    }
-
-    qs = urllib.parse.urlencode(data)
-
-    (owner, token) = gh_token.fetch_auth()
-    req = urllib.request.Request('https://api.github.com/repos/%s/scallywag/actions/runs?%s' % (owner, qs))
-    req.add_header('Accept', 'application/vnd.github.v3+json')
-    req.add_header('Authorization', 'Bearer ' + token)
-
-    try:
-        response = urllib.request.urlopen(req)
-    except urllib.error.URLError as e:
-        response = e
-
-    status = response.getcode()
-    logging.info("runs REST API status %s" % status)
-    if status != 200:
-        logging.error('scallywag: GitHub REST API failed status %s' % (status))
-        return 0, None
-
-    resp = response.read().decode('utf-8')
-    logging.info("runs REST API response %s" % resp)
-    j = json.loads(resp)
-
-    wfr = j['workflow_runs']
-    if len(wfr) <= 0:
-        logging.info("no most recent wrf_id available")
-        return 0, None
-
-    logging.info("most recent wrf_id %s" % wfr[0]['id'])
-    return wfr[0]['id'], wfr[0]['html_url']
-
-
 def _github_workflow_trigger(package, maintainer, commit, reference, default_tokens, buildnumber):
-    for _i in range(1, 60):
-        prev_wfr_id, _ = _github_most_recent_wfr_id()
-
-        if prev_wfr_id != 0:
-            break
-
-        logging.info("waiting before retry")
-        time.sleep(1)
-    else:
-        logging.info("timeout waiting for GitHub to report previous wfr_id")
-        print('scallywag: timeout waiting for GitHub to report previous wfr_id')
-
     # strip out any over-quoting in the token, as it's harmful to passing the
     # client_payload into scallywag via the command line
     default_tokens = re.sub(r'[\'"]', r'', default_tokens)
 
+    payload = {
+        "BUILDNUMBER": buildnumber,
+        "PACKAGE": package,
+        "MAINTAINER": maintainer,
+        "COMMIT": commit,
+        "REFERENCE": reference,
+        "DEFAULT_TOKENS": default_tokens,
+    }
+
     data = {
-        "event_type": "(%s) %s" % (buildnumber, package),  # 'display_title', appears as the run name in UI
-        "client_payload": {
-            "BUILDNUMBER": buildnumber,
-            "PACKAGE": package,
-            "MAINTAINER": maintainer,
-            "COMMIT": commit,
-            "REFERENCE": reference,
-            "DEFAULT_TOKENS": default_tokens,
-        }
+        "ref": "master",
+        "inputs": {
+            "title": "(%s) %s" % (buildnumber, package),  # appears as the run name in UI
+            "payload": json.dumps(payload)},
     }
 
     (owner, token) = gh_token.fetch_auth()
-    req = urllib.request.Request('https://api.github.com/repos/%s/scallywag/dispatches' % owner)
+    req = urllib.request.Request('https://api.github.com/repos/%s/scallywag/actions/workflows/scallywag.yml/dispatches' % owner)
 
-    req.add_header('Accept', 'application/vnd.github.v3+json')
+    req.add_header('Accept', 'application/vnd.github+json')
     req.add_header('Authorization', 'Bearer ' + token)
+    req.add_header('X-GitHub-Api-Version', '2026-03-10')
 
     try:
         response = urllib.request.urlopen(req, data=json.dumps(data).encode('utf-8'))
@@ -126,36 +82,18 @@ def _github_workflow_trigger(package, maintainer, commit, reference, default_tok
         response = e
 
     status = response.getcode()
-    if status != 204:
+    if status != 200:
         print('scallywag: GitHub REST API failed status %s' % (status))
         return -1, None
 
-    # response has no content, and doesn't give an id for the workflow that
-    # we've just requested. all we can do is poll the workflow runs list and
-    # guess that the most recent one is ours.
-    #
-    # (it seems that it takes a little while for the requested run to appear in
-    # the workflow run list, with status 'queued', and then some time later it
-    # changes to status 'in_progress'.)
-    #
-    # and since there may exist other runs with status 'in_progress', the only
-    # half-way reliable way to do this is to poll until a new wfr id appears...
-    #
-    # see https://github.community/t/repository-dispatch-response/17950
+    resp = response.read().decode('utf-8')
+    j = json.loads(resp)
 
-    for _i in range(1, 60):
-        wfr_id, buildurl = _github_most_recent_wfr_id()
+    wfr_id = j["workflow_run_id"]
+    buildurl = j["html_url"]
 
-        if wfr_id != prev_wfr_id:
-            return wfr_id, buildurl
-
-        logging.info("waiting before retry")
-        time.sleep(1)
-
-    logging.info("timeout waiting for GitHub to assign a wfr_id")
-    print('scallywag: timeout waiting for GitHub to assign a wfr_id')
-
-    return 0, None
+    logging.info("jobs dispatched with wfr_id %d" % (wfr_id))
+    return wfr_id, buildurl
 
 
 def _github_workflow_cancel(wfr_id):
