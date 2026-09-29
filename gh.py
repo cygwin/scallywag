@@ -132,7 +132,12 @@ def _github_check_status(wfr_id):
 
     j = json.loads(response.read().decode('utf-8'))
 
-    return process_wfr(j)
+    u = process_wfr(j)
+    if not hasattr(u, 'buildnumber'):
+        logging.error('no buildnumber in %s' % (j))
+        return None
+
+    return u
 
 
 def process_wfr(wfr):
