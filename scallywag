@@ -148,17 +148,37 @@ if package.kind == 'cygport':
         if 'testpackages' in package.tokens:
             setup_opts.append('-t')
 
+        # simply ignore the ':native' arch-qualifier when not cross-building
+        build_depends = [p.removesuffix(':native') for p in package.depends]
+
         subprocess.check_call([setup_exe,
                                '-q', '-n', '-O'] + setup_opts +
                               ['-R', os.environ['CYGWIN_ROOT'],
                                '-s', os.environ['CYGWIN_MIRROR'],
                                '-l', os.environ['CACHE'],
-                               '-P', ','.join(package.depends)])
+                               '-P', ','.join(build_depends)])
 
         # preserve setup.log.full
         shutil.move('/var/log/setup.log.full', os.path.join(mydir, 'setup.log.full'))
     else:
-        logging.info('installation of build dependencies when crossbuilding (currently) unimplemented')
+        # install cygwin packages into cross sys-root
+        cross_depends = [p for p in package.depends if not p.endswith(':native')]
+        logging.info('installing cross-build dependencies: %s', sorted(cross_depends))
+        if cross_depends:
+            try:
+                subprocess.check_call(['cygwin-pkg-tool', '--arch', arch, 'install'] + cross_depends)
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                logging.error('cygwin-pkg-tool failed')
+
+        # install native packages for anything marked with the ':native' arch
+        # qualifier
+        #
+        # XXX: these have to be Cygwin package names, so we might also need to
+        # remap them here to Fedora package names in rare cases
+        native_depends = [p.removesuffix(':native') for p in package.depends if p.endswith(':native')]
+        logging.info('installing native build dependencies: %s', sorted(native_depends))
+        if native_depends:
+            subprocess.check_call(['dnf', 'install', '-y'] + native_depends)
 
     # assemble the series of cygoprt subcommands for the build
     subcommands = []
