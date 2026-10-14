@@ -161,8 +161,40 @@ if package.kind == 'cygport':
         # preserve setup.log.full
         shutil.move('/var/log/setup.log.full', os.path.join(mydir, 'setup.log.full'))
     else:
+        depends = package.depends
+
+        # (the equivalent to) certain packages are already provided by the cross
+        # environment, so we can drop them from the build-dependencies
+        cross_packages = [
+            'gettext-devel',
+            'libasprintf-devel',
+            'libgettextpo-devel',
+            'libiconv-devel',
+            'libintl-devel',
+            'libtextstyle-devel',
+            'zlib-devel',
+        ]
+        depends = [p for p in depends if p not in cross_packages]
+
+        # certain build-dependencies can be assumed to be native
+        implicit_native = [
+            'autoconf',
+            'automake',
+            'binutils',
+            'cmake',
+            'cygport',
+            'gcc-core',
+            'gcc-g++',
+            'gnupg',
+            'make',
+            'meson',
+            'ninja',
+            'pkg-config',
+        ]
+        depends = [p + ':native' if p in implicit_native else p for p in depends]
+
         # install cygwin packages into cross sys-root
-        cross_depends = [p for p in package.depends if not p.endswith(':native')]
+        cross_depends = [p for p in depends if not p.endswith(':native')]
         logging.info('installing cross-build dependencies: %s', sorted(cross_depends))
         if cross_depends:
             try:
@@ -175,7 +207,7 @@ if package.kind == 'cygport':
         #
         # XXX: these have to be Cygwin package names, so we might also need to
         # remap them here to Fedora package names in rare cases
-        native_depends = [p.removesuffix(':native') for p in package.depends if p.endswith(':native')]
+        native_depends = [p.removesuffix(':native') for p in depends if p.endswith(':native')]
         logging.info('installing native build dependencies: %s', sorted(native_depends))
         if native_depends:
             subprocess.check_call(['dnf', 'install', '-y'] + native_depends)
